@@ -471,7 +471,8 @@ function next(){
   }
   if(s==='thirds'&&ST.thirds.length!==8){alert('Debes elegir exactamente 8 terceros');return;}
   if(s==='gol'){
-    const gi=document.getElementById('gi');if(gi)ST.goleador=gi.value.trim();
+    const gi=document.getElementById('gi');
+    if(gi&&gi.value.trim())ST.goleador=gi.value.trim();
     save();return;
   }
   if(ST.step<STEPS.length-1){ST.step++;R();}
@@ -482,7 +483,8 @@ function prev(){
 
 // ── SAVE ──
 async function save(){
-  const gi=document.getElementById('gi');if(gi)ST.goleador=gi.value.trim();
+  const gi=document.getElementById('gi');
+  if(gi&&gi.value.trim())ST.goleador=gi.value.trim();
   if(!ST.goleador){alert('Elige o escribe el nombre del goleador');return;}
   const ov=document.createElement('div');ov.className='saving-overlay';
   ov.innerHTML='<div class="saving-box"><span class="spin">⚽</span>Guardando tu quiniela…</div>';

@@ -326,8 +326,8 @@ function toggleRank(g,teamName){
   }
   // Check if all done to enable/disable next button
   const allDone=Object.keys(GS).every(gg=>ST.groups[gg].every(v=>v!==null));
-  const btn=document.getElementById('btn-next-groups');
-  if(btn)btn.disabled=!allDone;
+  // Update the nav-row next button
+  APP.querySelectorAll('.nav-row .btn-g').forEach(btn=>btn.disabled=!allDone);
 }
 
 // ── THIRDS ──

@@ -162,7 +162,8 @@ tr:nth-child(even) td{background:#f7fafc}
   </div>
   <div class="top-bar">
     <button class="btn btn-dark" onclick="load()">🔄 Actualizar</button>
-    <button class="btn btn-o" style="color:#e53e3e;border-color:#fed7d7" onclick="clearAll()">🗑 Borrar todo</button>
+    <button class="btn btn-o" style="color:#e53e3e;border-color:#fed7d7" onclick="clearAll()">🗑 Borrar quinielas</button>
+    <button class="btn btn-o" style="color:#c8952a;border-color:#fbd38d" onclick="clearRealResults()">🧹 Limpiar resultados reales</button>
     <span class="upd" id="upd"></span>
   </div>
   <div id="main"><div class="loading"><span class="spin">⚽</span> Cargando…</div></div>
@@ -253,6 +254,14 @@ let view='overview';
 let selIdx=null;
 
 // ── SUPABASE ──
+function clearRealResults(){
+  if(!confirm('¿Limpiar TODOS los resultados reales? Los puntajes se resetearán a 0.'))return;
+  real={groups:{},thirds:[],picks:{},goleador:''};
+  saveReal();
+  alert('✅ Resultados reales limpiados.');
+  render();
+}
+
 function load(){
   document.getElementById('upd').textContent='Actualizando…';
   supaGet().then(data=>{

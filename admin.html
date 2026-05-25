@@ -293,12 +293,15 @@ function load(){
   document.getElementById('upd').textContent='Actualizando…';
   supaGet().then(data=>{
     const realRow=data.find(r=>r.name==='__real__');
-    if(realRow&&realRow.data){real=realRow.data;localStorage.setItem('qm2026_real',JSON.stringify(real));}
+    if(realRow&&realRow.data){
+      real={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
+      localStorage.setItem('qm2026_real',JSON.stringify(real));
+    }
     rows=data.filter(r=>r.name!=='__real__');
     qs=rows.map(r=>({...r.data,_id:r.id,_created:r.created_at}));
     document.getElementById('tot').textContent=qs.length+' quinela'+(qs.length!==1?'s':'');
     document.getElementById('upd').textContent='Actualizado: '+new Date().toLocaleTimeString('es');
-    render();
+    if(view!=='results')render();
   }).catch(err=>{
     document.getElementById('main').innerHTML=`<div style="color:#c53030;background:#fff5f5;border-radius:8px;padding:1rem">Error: ${err.message}</div>`;
     document.getElementById('upd').textContent='Error';

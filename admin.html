@@ -353,6 +353,15 @@ function getRealTeam(src){
 }
 
 // ── SCORING ──
+function mPts(id,wpts,epts,bpts,R,q){
+  const rw=(R.picks||{})[id],pw=(q.picks||{})[id];
+  const rs=((R.scores||{})[id])||{},qs=((q.scores||{})[id])||{};
+  const wm=!!(rw&&pw&&rw.n===pw.n);
+  const ex=rs.h!==''&&rs.h!==undefined&&rs.a!==''&&rs.a!==undefined&&
+            qs.h!==''&&qs.h!==undefined&&qs.a!==''&&qs.a!==undefined&&
+            rs.h===qs.h&&rs.a===qs.a;
+  return(wm?wpts:0)+(ex?epts:0)+(wm&&ex?bpts:0);
+}
 function scoreQ(q){
   const R=real||{groups:{},thirds:[],picks:{},goleador:''};
   let r16q=0,r16b=0,r16e=0,qfq=0,qfb=0,qfe=0,cfq=0,cfb=0,cfe=0,sfq=0,sfb=0,sfe=0,fnq=0,fnb=0,fne=0,gol=0;
@@ -367,35 +376,36 @@ function scoreQ(q){
   if(q.thirds)q.thirds.forEach(g=>{const ord=q.groups&&q.groups[g];if(ord&&ord[2]){predQ16.add(ord[2]);predQ16pos[ord[2]]={g,pos:2};}});
 
   predQ16.forEach(t=>{if(realQ16.has(t)){r16q+=4;const rp=realQ16pos[t],pp=predQ16pos[t];if(rp&&pp&&rp.g===pp.g&&rp.pos===pp.pos)r16b+=2;}});
-  R16_IDS.forEach(id=>{const rw=R.picks&&R.picks[id],pw=q.picks&&q.picks[id];if(rw&&pw&&rw.n===pw.n)r16e+=2;});
+  R16_IDS.forEach(id=>{r16e+=mPts(id,1,2,3,R,q);});
 
   const realTQF={},predTQF={};
   R16_IDS.forEach(id=>{const w=R.picks&&R.picks[id];if(w)realTQF[w.n]=r16ToQF[id];});
   R16_IDS.forEach(id=>{const w=q.picks&&q.picks[id];if(w)predTQF[w.n]=r16ToQF[id];});
   const realQF=new Set(Object.keys(realTQF)),predQF=new Set(Object.keys(predTQF));
   predQF.forEach(t=>{if(realQF.has(t)){qfq+=4;if(realTQF[t]&&predTQF[t]===realTQF[t])qfb+=1;}});
-  QF_IDS.forEach(id=>{const rw=R.picks&&R.picks[id],pw=q.picks&&q.picks[id];if(rw&&pw&&rw.n===pw.n)qfe+=2;});
+  QF_IDS.forEach(id=>{qfe+=mPts(id,1,2,3,R,q);});
 
   const realTCF={},predTCF={};
   QF_IDS.forEach(id=>{const w=R.picks&&R.picks[id];if(w)realTCF[w.n]=qfToCF[id];});
   QF_IDS.forEach(id=>{const w=q.picks&&q.picks[id];if(w)predTCF[w.n]=qfToCF[id];});
   const realCF=new Set(Object.keys(realTCF)),predCF=new Set(Object.keys(predTCF));
   predCF.forEach(t=>{if(realCF.has(t)){cfq+=7;if(realTCF[t]&&predTCF[t]===realTCF[t])cfb+=1;}});
-  CF_IDS.forEach(id=>{const rw=R.picks&&R.picks[id],pw=q.picks&&q.picks[id];if(rw&&pw&&rw.n===pw.n)cfe+=2;});
+  CF_IDS.forEach(id=>{cfe+=mPts(id,1,2,3,R,q);});
 
   const realTSF={},predTSF={};
   CF_IDS.forEach(id=>{const w=R.picks&&R.picks[id];if(w)realTSF[w.n]=cfToSF[id];});
   CF_IDS.forEach(id=>{const w=q.picks&&q.picks[id];if(w)predTSF[w.n]=cfToSF[id];});
   const realSF=new Set(Object.keys(realTSF)),predSF=new Set(Object.keys(predTSF));
   predSF.forEach(t=>{if(realSF.has(t)){sfq+=10;if(realTSF[t]&&predTSF[t]===realTSF[t])sfb+=1;}});
-  SF_IDS.forEach(id=>{const rw=R.picks&&R.picks[id],pw=q.picks&&q.picks[id];if(rw&&pw&&rw.n===pw.n)sfe+=2;});
+  SF_IDS.forEach(id=>{sfe+=mPts(id,1,2,3,R,q);});
 
   const realFN=new Set(),predFN=new Set(),realFNS={},predFNS={};
   SF_IDS.forEach(id=>{const w=R.picks&&R.picks[id];if(w){realFN.add(w.n);realFNS[w.n]=id;}});
   SF_IDS.forEach(id=>{const w=q.picks&&q.picks[id];if(w){predFN.add(w.n);predFNS[w.n]=id;}});
   predFN.forEach(t=>{if(realFN.has(t)){fnq+=15;if(realFNS[t]&&predFNS[t]===realFNS[t])fnb+=5;}});
-  const rF=R.picks&&R.picks['p104'],pF=q.picks&&q.picks['p104'];
-  if(rF&&pF&&rF.n===pF.n)fne+=10;
+  fne+=mPts('p103',1,2,3,R,q);
+  fne+=mPts('p104',1,10,3,R,q);
+
   if(R.goleador&&q.goleador&&R.goleador.trim().toLowerCase()===q.goleador.trim().toLowerCase())gol=5;
   const total=r16q+r16b+r16e+qfq+qfb+qfe+cfq+cfb+cfe+sfq+sfb+sfe+fnq+fnb+fne+gol;
   return{r16q,r16b,r16e,qfq,qfb,qfe,cfq,cfb,cfe,sfq,sfb,sfe,fnq,fnb,fne,gol,total};
@@ -470,11 +480,11 @@ function rOverview(){
 function rScores(){
   view='scores';
   const ptsKey=`<div class="pts-key">${[
-    {r:'16avos',items:['4 pts · equipo clasifica','2 pts · posición exacta','2 pts · partido exacto']},
-    {r:'8avos', items:['4 pts · equipo clasifica','1 pt · llave correcta','2 pts · partido exacto']},
-    {r:'4tos',  items:['7 pts · equipo clasifica','1 pt · llave correcta','2 pts · partido exacto']},
-    {r:'Semis', items:['10 pts · equipo clasifica','1 pt · llave correcta','2 pts · partido exacto']},
-    {r:'Final', items:['15 pts · finalista','5 pts · llave correcta','10 pts · campeón exacto']},
+    {r:'16avos',items:['4 pts · equipo clasifica','2 pts · posición exacta','1 ganador · +2 marcador exacto · +3 bono']},
+    {r:'8avos', items:['4 pts · equipo clasifica','1 pt · llave correcta','1 ganador · +2 marcador exacto · +3 bono']},
+    {r:'4tos',  items:['7 pts · equipo clasifica','1 pt · llave correcta','1 ganador · +2 marcador exacto · +3 bono']},
+    {r:'Semis', items:['10 pts · equipo clasifica','1 pt · llave correcta','1 ganador · +2 marcador exacto · +3 bono']},
+    {r:'Final', items:['15 pts · finalista','5 pts · llave correcta','3°: 1+2+3 · Final: 1 gan. +10 exacto +3 bono']},
     {r:'Goleador',items:['5 pts · goleador exacto']},
   ].map(x=>`<div class="pts-key-card"><h4>${x.r}</h4><ul>${x.items.map(i=>`<li><b>✓</b>${i}</li>`).join('')}</ul></div>`).join('')}</div>`;
 
@@ -668,7 +678,7 @@ function rDetail(idx){
   h+=`<div class="gol-box"><span style="font-size:1.3rem">👟</span><div><div style="font-size:.75rem;color:#2b6cb0;margin-bottom:2px">Goleador</div><strong>${e(q.goleador)||'—'}</strong>${sc.gol>0?` <span class="chip chip-g">+${sc.gol}pts</span>`:''}</div></div>`;
   if(hasReal()){
     h+=`<div class="card"><div class="card-hdr"><h2>🏅 Puntaje: ${sc.total} pts</h2></div><div class="card-body"><table>
-    <thead><tr><th>Ronda</th><th>Clasificados</th><th>Bono/Llave</th><th>Exacto</th><th>Sub</th></tr></thead><tbody>
+    <thead><tr><th>Ronda</th><th>Clasificados</th><th>Bono/Llave</th><th>Partidos</th><th>Sub</th></tr></thead><tbody>
     ${[['16avos',sc.r16q,sc.r16b,sc.r16e],['8avos',sc.qfq,sc.qfb,sc.qfe],['4tos',sc.cfq,sc.cfb,sc.cfe],['Semis',sc.sfq,sc.sfb,sc.sfe],['Final',sc.fnq,sc.fnb,sc.fne]].map(([r,a,b,c])=>`<tr><td><strong>${r}</strong></td><td class="pts-cell">${a}</td><td class="pts-cell">${b}</td><td class="pts-cell">${c}</td><td class="pts-cell" style="font-weight:800">${a+b+c}</td></tr>`).join('')}
     <tr style="background:#f0fff4"><td><strong>Goleador</strong></td><td colspan="3"></td><td class="pts-cell" style="font-weight:800">${sc.gol}</td></tr>
     </tbody></table></div></div>`;

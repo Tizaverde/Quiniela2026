@@ -281,24 +281,6 @@ function saveReal(){
   },1500);
 }
 
-async function initReal(){
-  // Only fetch from Supabase when local storage has nothing (first visit / cleared browser)
-  const hasLocal=real.groups&&Object.keys(real.groups).length>0
-    ||real.thirds&&real.thirds.length>0
-    ||real.picks&&Object.keys(real.picks).length>0
-    ||real.scores&&Object.keys(real.scores).length>0;
-  if(!hasLocal){
-    try{
-      const data=await supaGet();
-      const realRow=data.find(r=>r.name==='__real__');
-      if(realRow&&realRow.data){
-        real={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
-        localStorage.setItem('qm2026_real',JSON.stringify(real));
-      }
-    }catch(e){console.warn('initReal:',e);}
-  }
-}
-
 // PARTICIPANTS
 let rows=[];
 let qs=[];
@@ -320,18 +302,13 @@ function load(){
   document.getElementById('upd').textContent='Actualizando…';
   supaGet().then(data=>{
     const realRow=data.find(r=>r.name==='__real__');
-    // On first load only: if localStorage was empty, seed real from Supabase
+    // On first page load: always use Supabase data so changes from other
+    // devices/browsers are picked up (cross-device sync).
     if(_firstLoad&&realRow&&realRow.data){
-      _firstLoad=false;
-      const hasLocal=real.groups&&Object.keys(real.groups).length>0
-        ||real.thirds&&real.thirds.length>0
-        ||real.picks&&Object.keys(real.picks).length>0
-        ||real.scores&&Object.keys(real.scores).length>0;
-      if(!hasLocal){
-        real={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
-        localStorage.setItem('qm2026_real',JSON.stringify(real));
-      }
-    } else { _firstLoad=false; }
+      real={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
+      localStorage.setItem('qm2026_real',JSON.stringify(real));
+    }
+    _firstLoad=false;
     rows=data.filter(r=>r.name!=='__real__');
     qs=rows.map(r=>({...r.data,_id:r.id,_created:r.created_at}));
     document.getElementById('tot').textContent=qs.length+' quinela'+(qs.length!==1?'s':'');

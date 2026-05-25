@@ -267,10 +267,24 @@ const SCHEDULE={
 
 // REAL RESULTS STATE
 let real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
-// Load real from localStorage
+// Load real from localStorage; if empty, fall back to Supabase (handled in initReal)
 try{const rr=localStorage.getItem('qm2026_real');if(rr)real=JSON.parse(rr);}catch(e){}
 function saveReal(){
   localStorage.setItem('qm2026_real',JSON.stringify(real));
+}
+async function initReal(){
+  const localEmpty=!real.groups||Object.keys(real.groups).length===0;
+  const localHasData=real.thirds&&real.thirds.length>0||real.picks&&Object.keys(real.picks).length>0||real.scores&&Object.keys(real.scores).length>0;
+  if(localEmpty&&!localHasData){
+    try{
+      const data=await supaGet();
+      const realRow=data.find(r=>r.name==='__real__');
+      if(realRow&&realRow.data){
+        real={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
+        localStorage.setItem('qm2026_real',JSON.stringify(real));
+      }
+    }catch(e){console.warn('initReal:',e);}
+  }
 }
 
 // PARTICIPANTS
@@ -292,14 +306,8 @@ function clearRealResults(){
 function load(){
   document.getElementById('upd').textContent='Actualizando…';
   supaGet().then(data=>{
-    const realRow=data.find(r=>r.name==='__real__');
-    if(realRow&&realRow.data&&view!=='results'){
-      const incoming={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
-      const supaHasScores=incoming.scores&&Object.keys(incoming.scores).length>0;
-      if(!supaHasScores&&real.scores&&Object.keys(real.scores).length>0)incoming.scores=real.scores;
-      real=incoming;
-      localStorage.setItem('qm2026_real',JSON.stringify(real));
-    }
+    // Never overwrite real from Supabase in the poll — localStorage is authoritative.
+    // real is bootstrapped once in initReal() on page load.
     rows=data.filter(r=>r.name!=='__real__');
     qs=rows.map(r=>({...r.data,_id:r.id,_created:r.created_at}));
     document.getElementById('tot').textContent=qs.length+' quinela'+(qs.length!==1?'s':'');
@@ -808,7 +816,7 @@ async function del(id,idx){if(!confirm('¿Eliminar quiniela de "'+qs[idx].name+'
 function gTn(n){for(const g of Object.values(GS)){const t=g.teams.find(x=>x.n===n);if(t)return t;}return null;}
 function e(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-load();
+initReal().then(()=>load());
 setInterval(load,30000);
 </script>
 </body>

@@ -296,19 +296,18 @@ function load(){
   document.getElementById('upd').textContent='Actualizando…';
   supaGet().then(data=>{
     const realRow=data.find(r=>r.name==='__real__');
-    // On first page load: use whichever source (localStorage or Supabase) is newer.
-    // _ts timestamp written by saveReal() determines which is authoritative.
-    // Same device refresh → localStorage wins (saved after Supabase, same or newer _ts).
-    // Different device → Supabase wins (newer _ts from the other device).
-    if(_firstLoad&&realRow&&realRow.data){
-      const supTs=(realRow.data._ts)||0;
-      const locTs=(real._ts)||0;
-      if(supTs>locTs){
+    if(_firstLoad){
+      _firstLoad=false;
+      if(realRow&&realRow.data){
+        // Supabase is the single shared source of truth — always use it on first load
+        // so both phone and computer always see the same data.
         real={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
         localStorage.setItem('qm2026_real',JSON.stringify(real));
+      } else {
+        // No Supabase data yet (first ever use) — push local data up so it's shared
+        if(real.groups&&Object.keys(real.groups).length>0)saveReal();
       }
     }
-    _firstLoad=false;
     rows=data.filter(r=>r.name!=='__real__');
     qs=rows.map(r=>({...r.data,_id:r.id,_created:r.created_at}));
     document.getElementById('tot').textContent=qs.length+' quinela'+(qs.length!==1?'s':'');

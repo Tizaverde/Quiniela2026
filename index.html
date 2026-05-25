@@ -108,6 +108,10 @@ input[type=text]:focus{border-color:#1a6b3c}
 .info-box{background:#ebf8ff;border:1.5px solid #bee3f8;border-radius:8px;padding:10px 14px;font-size:.82rem;color:#2c5282;margin-bottom:1rem}
 @media(max-width:520px){.groups-all{grid-template-columns:1fr 1fr}.thirds-grid{grid-template-columns:1fr 1fr}.scorer-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:360px){.groups-all{grid-template-columns:1fr}}
+.score-inp{width:42px;height:30px;text-align:center;border:1.5px solid #e2e8f0;border-radius:6px;font-size:.9rem;font-weight:700;padding:0 4px;font-family:inherit;outline:none;-moz-appearance:textfield;background:#fff;flex-shrink:0}
+.score-inp::-webkit-outer-spin-button,.score-inp::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.score-inp:focus{border-color:#1a6b3c}
+.match-sched{font-size:.58rem;color:rgba(255,255,255,.7);font-weight:400;font-style:normal;margin-left:4px}
 </style>
 </head>
 <body>
@@ -150,15 +154,15 @@ const R16=[
   {id:'p83',num:'P83',hl:'2°K',al:'2°L',hs:{t:'g',g:'K',p:1},as:{t:'g',g:'L',p:1}},
   {id:'p84',num:'P84',hl:'1°H',al:'2°J',hs:{t:'g',g:'H',p:0},as:{t:'g',g:'J',p:1}},
   {id:'p81',num:'P81',hl:'1°D',al:'3°B/E/F/I/J',hs:{t:'g',g:'D',p:0},as:{t:'3rd',slot:2}},
-  {id:'p82',num:'P82',hl:'1°G',al:'3°A/E/H/I/J',hs:{t:'g',g:'G',p:0},as:{t:'3rd',slot:4}},
+  {id:'p82',num:'P82',hl:'1°G',al:'3°A/B/E/H/I/J',hs:{t:'g',g:'G',p:0},as:{t:'3rd',slot:4}},
   {id:'p78',num:'P78',hl:'2°E',al:'2°I',hs:{t:'g',g:'E',p:1},as:{t:'g',g:'I',p:1}},
   {id:'p76',num:'P76',hl:'1°C',al:'2°F',hs:{t:'g',g:'C',p:0},as:{t:'g',g:'F',p:1}},
-  {id:'p79',num:'P79',hl:'1°A',al:'3°C/E/F/H/I',hs:{t:'g',g:'A',p:0},as:{t:'3rd',slot:0}},
-  {id:'p80',num:'P80',hl:'1°L',al:'3°E/H/I/J/K',hs:{t:'g',g:'L',p:0},as:{t:'3rd',slot:7}},
+  {id:'p79',num:'P79',hl:'1°A',al:'3°C/E/H/I',hs:{t:'g',g:'A',p:0},as:{t:'3rd',slot:0}},
+  {id:'p80',num:'P80',hl:'1°L',al:'3°C/D/E/F/H/I/J/K',hs:{t:'g',g:'L',p:0},as:{t:'3rd',slot:7}},
   {id:'p88',num:'P88',hl:'2°D',al:'2°G',hs:{t:'g',g:'D',p:1},as:{t:'g',g:'G',p:1}},
   {id:'p86',num:'P86',hl:'1°J',al:'2°H',hs:{t:'g',g:'J',p:0},as:{t:'g',g:'H',p:1}},
   {id:'p85',num:'P85',hl:'1°B',al:'3°E/F/G/I/J',hs:{t:'g',g:'B',p:0},as:{t:'3rd',slot:1}},
-  {id:'p87',num:'P87',hl:'1°K',al:'3°D/E/I/J/L',hs:{t:'g',g:'K',p:0},as:{t:'3rd',slot:6}}
+  {id:'p87',num:'P87',hl:'1°K',al:'3°C/D/E/F/I/L',hs:{t:'g',g:'K',p:0},as:{t:'3rd',slot:6}}
 ];
 const QF=[
   {id:'qf_p89',num:'P89',hl:'W74',al:'W77',hs:{t:'w',m:'p74'},as:{t:'w',m:'p77'}},
@@ -183,12 +187,24 @@ const SF=[
 const THIRD_PLACE={id:'p103',num:'P103',hl:'Perdedor P101',al:'Perdedor P102',hs:{t:'l',m:'sf_p101'},as:{t:'l',m:'sf_p102'}};
 const FN={id:'p104',num:'P104',hl:'W101',al:'W102',hs:{t:'w',m:'sf_p101'},as:{t:'w',m:'sf_p102'}};
 
+const SCHEDULE={
+  p73:{d:'28 jun',t:'15:00'},p74:{d:'29 jun',t:'16:30'},p75:{d:'29 jun',t:'21:00'},p76:{d:'29 jun',t:'13:00'},
+  p77:{d:'30 jun',t:'17:00'},p78:{d:'30 jun',t:'13:00'},p79:{d:'30 jun',t:'21:00'},p80:{d:'1 jul',t:'12:00'},
+  p81:{d:'1 jul',t:'20:00'},p82:{d:'1 jul',t:'16:00'},p83:{d:'2 jul',t:'19:00'},p84:{d:'2 jul',t:'15:00'},
+  p85:{d:'2 jul',t:'23:00'},p86:{d:'3 jul',t:'18:00'},p87:{d:'3 jul',t:'21:30'},p88:{d:'3 jul',t:'14:00'},
+  qf_p89:{d:'4 jul',t:'17:00'},qf_p90:{d:'4 jul',t:'13:00'},qf_p91:{d:'5 jul',t:'16:00'},qf_p92:{d:'5 jul',t:'20:00'},
+  qf_p93:{d:'6 jul',t:'15:00'},qf_p94:{d:'6 jul',t:'20:00'},qf_p95:{d:'7 jul',t:'12:00'},qf_p96:{d:'7 jul',t:'16:00'},
+  cf_p97:{d:'9 jul',t:'16:00'},cf_p98:{d:'11 jul',t:'17:00'},cf_p99:{d:'10 jul',t:'15:00'},cf_p100:{d:'11 jul',t:'21:00'},
+  sf_p101:{d:'14 jul',t:'15:00'},sf_p102:{d:'15 jul',t:'15:00'},
+  p103:{d:'18 jul',t:'17:00'},p104:{d:'19 jul',t:'15:00'}
+};
+
 const SCORERS=['Kylian Mbappé (Francia)','Lionel Messi (Argentina)','Erling Haaland (Noruega)','Harry Kane (Inglaterra)','Cristiano Ronaldo (Portugal)','Vinicius Jr. (Brasil)','Lamine Yamal (España)','Lautaro Martínez (Argentina)','Julián Álvarez (Argentina)','Dembélé (Francia)','Bukayo Saka (Inglaterra)','Bruno Fernandes (Portugal)','Florian Wirtz (Alemania)','Jamal Musiala (Alemania)','Cody Gakpo (Países Bajos)','Raphinha (Brasil)','Romelu Lukaku (Bélgica)','Mohamed Salah (Egipto)','Olise (Francia)'];
 
 const STEP_LABELS=['Nombre','Fase de Grupos','Mejores Terceros','16avos','8avos','4tos','Semifinal','3°/4° y Final','Goleador'];
 const STEPS=['name','groups','thirds','r16','qf','cf','sf','final','gol'];
 
-let ST={step:0,name:'',groups:{},thirds:[],picks:{},goleador:''};
+let ST={step:0,name:'',groups:{},thirds:[],picks:{},scores:{},goleador:''};
 Object.keys(GS).forEach(g=>{ST.groups[g]=[null,null,null,null];}); // null = unranked
 const APP=document.getElementById('app');
 
@@ -368,18 +384,23 @@ function mCard(m){
   const h=gT(m.hs),a=gT(m.as),w=ST.picks[m.id];
   const hw=w&&h&&w.n===h.n,aw=w&&a&&w.n===a.n;
   const ok=!!h&&!!a;
+  const sc=SCHEDULE[m.id];
+  const sh=(ST.scores[m.id]||{}).h??'';
+  const sa=(ST.scores[m.id]||{}).a??'';
   return`<div class="match-card${w?' done':''}" id="mc-${m.id}">
-  <div class="match-lbl">${m.num}<span>${m.hl} vs ${m.al}</span></div>
+  <div class="match-lbl">${m.num}<span>${m.hl} vs ${m.al}${sc?`<em class="match-sched"> · 📅 ${sc.d} ${sc.t} VET</em>`:''}</span></div>
   <div class="match-team${hw?' winner':''}${!h?' pending':''}" onclick="${ok?`pick('${m.id}','h')`:''}">
     <span class="team-flag">${h?h.f:'🏳'}</span>
     <span class="team-name-txt">${h?(e(h.n)+(h._from?` <small style="color:#718096;font-size:.65rem">(${h._from})</small>`:'')):'pendiente…'}</span>
     <span class="win-icon">✓</span>
+    ${ok?`<input class="score-inp" type="number" min="0" max="99" value="${sh}" onclick="event.stopPropagation()" onchange="updateScore('${m.id}','h',this.value)">`:''}
   </div>
   <div class="mdiv"></div>
   <div class="match-team${aw?' winner':''}${!a?' pending':''}" onclick="${ok?`pick('${m.id}','a')`:''}">
     <span class="team-flag">${a?a.f:'🏳'}</span>
     <span class="team-name-txt">${a?(e(a.n)+(a._from?` <small style="color:#718096;font-size:.65rem">(${a._from})</small>`:'')):'pendiente…'}</span>
     <span class="win-icon">✓</span>
+    ${ok?`<input class="score-inp" type="number" min="0" max="99" value="${sa}" onclick="event.stopPropagation()" onchange="updateScore('${m.id}','a',this.value)">`:''}
   </div>
   </div>`;
 }
@@ -419,6 +440,18 @@ function pick(id,side){
   else if(s==='cf')rMatchRound('4tos de Final',CF);
   else if(s==='sf')rSF();
   else if(s==='final')rFinal();
+}
+
+function updateScore(id,side,val){
+  if(!ST.scores[id])ST.scores[id]={h:'',a:''};
+  const n=parseInt(val);
+  ST.scores[id][side]=isNaN(n)?'':n;
+  const sc=ST.scores[id];
+  if(sc.h!==''&&sc.a!==''){
+    const hv=parseInt(sc.h),av=parseInt(sc.a);
+    if(hv>av)pick(id,'h');
+    else if(av>hv)pick(id,'a');
+  }
 }
 
 // ── GOLEADOR ──
@@ -512,7 +545,7 @@ async function save(){
   ov.innerHTML='<div class="saving-box"><span class="spin">⚽</span>Guardando tu quiniela…</div>';
   document.body.appendChild(ov);
   try{
-    const data={name:ST.name,groups:ST.groups,thirds:ST.thirds,picks:ST.picks,goleador:ST.goleador,savedAt:new Date().toISOString()};
+    const data={name:ST.name,groups:ST.groups,thirds:ST.thirds,picks:ST.picks,scores:ST.scores,goleador:ST.goleador,savedAt:new Date().toISOString()};
     await supaInsert(ST.name,data);
     document.body.removeChild(ov);
     rDone();
@@ -537,7 +570,7 @@ function rDone(){
 }
 
 function reset(){
-  ST={step:0,name:'',groups:{},thirds:[],picks:{},goleador:''};
+  ST={step:0,name:'',groups:{},thirds:[],picks:{},scores:{},goleador:''};
   Object.keys(GS).forEach(g=>{ST.groups[g]=[null,null,null,null];});
   R();
 }

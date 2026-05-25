@@ -139,6 +139,8 @@ tr:nth-child(even) td{background:#f7fafc}
 .cmp-table td{font-size:.75rem;padding:6px 10px}
 .cmp-grp td{background:#1a3a5c!important;color:#fff;font-weight:700;font-size:.7rem;letter-spacing:.04em;padding:5px 10px}
 @media(max-width:500px){.stats{grid-template-columns:repeat(2,1fr)}}
+.score-inp{width:42px;height:30px;text-align:center;border:1.5px solid #e2e8f0;border-radius:6px;font-size:.9rem;font-weight:700;padding:0 4px;font-family:inherit;outline:none;-moz-appearance:textfield;background:#fff;flex-shrink:0}.score-inp::-webkit-outer-spin-button,.score-inp::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.score-inp:focus{border-color:#1a6b3c}
+.match-sched{font-size:.58rem;color:rgba(255,255,255,.7);font-weight:400;font-style:normal;margin-left:4px}
 </style>
 </head>
 <body>
@@ -202,15 +204,15 @@ const R16=[
   {id:'p83',num:'P83',hl:'2°K',al:'2°L',hs:{t:'g',g:'K',p:1},as:{t:'g',g:'L',p:1}},
   {id:'p84',num:'P84',hl:'1°H',al:'2°J',hs:{t:'g',g:'H',p:0},as:{t:'g',g:'J',p:1}},
   {id:'p81',num:'P81',hl:'1°D',al:'3°B/E/F/I/J',hs:{t:'g',g:'D',p:0},as:{t:'3rd',slot:2}},
-  {id:'p82',num:'P82',hl:'1°G',al:'3°A/E/H/I/J',hs:{t:'g',g:'G',p:0},as:{t:'3rd',slot:4}},
+  {id:'p82',num:'P82',hl:'1°G',al:'3°A/B/E/H/I/J',hs:{t:'g',g:'G',p:0},as:{t:'3rd',slot:4}},
   {id:'p78',num:'P78',hl:'2°E',al:'2°I',hs:{t:'g',g:'E',p:1},as:{t:'g',g:'I',p:1}},
   {id:'p76',num:'P76',hl:'1°C',al:'2°F',hs:{t:'g',g:'C',p:0},as:{t:'g',g:'F',p:1}},
-  {id:'p79',num:'P79',hl:'1°A',al:'3°C/E/F/H/I',hs:{t:'g',g:'A',p:0},as:{t:'3rd',slot:0}},
-  {id:'p80',num:'P80',hl:'1°L',al:'3°E/H/I/J/K',hs:{t:'g',g:'L',p:0},as:{t:'3rd',slot:7}},
+  {id:'p79',num:'P79',hl:'1°A',al:'3°C/E/H/I',hs:{t:'g',g:'A',p:0},as:{t:'3rd',slot:0}},
+  {id:'p80',num:'P80',hl:'1°L',al:'3°C/D/E/F/H/I/J/K',hs:{t:'g',g:'L',p:0},as:{t:'3rd',slot:7}},
   {id:'p88',num:'P88',hl:'2°D',al:'2°G',hs:{t:'g',g:'D',p:1},as:{t:'g',g:'G',p:1}},
   {id:'p86',num:'P86',hl:'1°J',al:'2°H',hs:{t:'g',g:'J',p:0},as:{t:'g',g:'H',p:1}},
   {id:'p85',num:'P85',hl:'1°B',al:'3°E/F/G/I/J',hs:{t:'g',g:'B',p:0},as:{t:'3rd',slot:1}},
-  {id:'p87',num:'P87',hl:'1°K',al:'3°D/E/I/J/L',hs:{t:'g',g:'K',p:0},as:{t:'3rd',slot:6}}
+  {id:'p87',num:'P87',hl:'1°K',al:'3°C/D/E/F/I/L',hs:{t:'g',g:'K',p:0},as:{t:'3rd',slot:6}}
 ];
 const QF=[
   {id:'qf_p89',num:'P89',hl:'W74',al:'W77',hs:{t:'w',m:'p74'},as:{t:'w',m:'p77'}},
@@ -242,8 +244,20 @@ const r16ToQF={p74:'qf_p89',p77:'qf_p89',p73:'qf_p90',p75:'qf_p90',p83:'qf_p93',
 const qfToCF={qf_p89:'cf_p97',qf_p90:'cf_p97',qf_p93:'cf_p98',qf_p94:'cf_p98',qf_p91:'cf_p99',qf_p92:'cf_p99',qf_p95:'cf_p100',qf_p96:'cf_p100'};
 const cfToSF={cf_p97:'sf_p101',cf_p98:'sf_p101',cf_p99:'sf_p102',cf_p100:'sf_p102'};
 
+const SCHEDULE={
+  p73:{d:'28 jun',t:'15:00'},p74:{d:'29 jun',t:'16:30'},p75:{d:'29 jun',t:'21:00'},p76:{d:'29 jun',t:'13:00'},
+  p77:{d:'30 jun',t:'17:00'},p78:{d:'30 jun',t:'13:00'},p79:{d:'30 jun',t:'21:00'},p80:{d:'1 jul',t:'12:00'},
+  p81:{d:'1 jul',t:'20:00'},p82:{d:'1 jul',t:'16:00'},p83:{d:'2 jul',t:'19:00'},p84:{d:'2 jul',t:'15:00'},
+  p85:{d:'2 jul',t:'23:00'},p86:{d:'3 jul',t:'18:00'},p87:{d:'3 jul',t:'21:30'},p88:{d:'3 jul',t:'14:00'},
+  qf_p89:{d:'4 jul',t:'17:00'},qf_p90:{d:'4 jul',t:'13:00'},qf_p91:{d:'5 jul',t:'16:00'},qf_p92:{d:'5 jul',t:'20:00'},
+  qf_p93:{d:'6 jul',t:'15:00'},qf_p94:{d:'6 jul',t:'20:00'},qf_p95:{d:'7 jul',t:'12:00'},qf_p96:{d:'7 jul',t:'16:00'},
+  cf_p97:{d:'9 jul',t:'16:00'},cf_p98:{d:'11 jul',t:'17:00'},cf_p99:{d:'10 jul',t:'15:00'},cf_p100:{d:'11 jul',t:'21:00'},
+  sf_p101:{d:'14 jul',t:'15:00'},sf_p102:{d:'15 jul',t:'15:00'},
+  p103:{d:'18 jul',t:'17:00'},p104:{d:'19 jul',t:'15:00'}
+};
+
 // REAL RESULTS STATE
-let real={groups:{},thirds:[],picks:{},goleador:''};
+let real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
 // Load real from localStorage
 try{const rr=localStorage.getItem('qm2026_real');if(rr)real=JSON.parse(rr);}catch(e){}
 function saveReal(){localStorage.setItem('qm2026_real',JSON.stringify(real));}
@@ -257,7 +271,7 @@ let selIdx=null;
 // ── SUPABASE ──
 function clearRealResults(){
   if(!confirm('¿Limpiar TODOS los resultados reales? Los puntajes se resetearán a 0.'))return;
-  real={groups:{},thirds:[],picks:{},goleador:''};
+  real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
   saveReal();
   alert('✅ Resultados reales limpiados.');
   render();
@@ -485,6 +499,20 @@ function rScores(){
   document.getElementById('main').innerHTML=h;
 }
 
+function updateScoreReal(id,side,val){
+  if(!real.scores)real.scores={};
+  if(!real.scores[id])real.scores[id]={h:'',a:''};
+  const n=parseInt(val);
+  real.scores[id][side]=isNaN(n)?'':n;
+  saveReal();
+  const sc=real.scores[id];
+  if(sc.h!==''&&sc.a!==''){
+    const hv=parseInt(sc.h),av=parseInt(sc.a);
+    if(hv>av)pickReal(id,'h');
+    else if(av>hv)pickReal(id,'a');
+  }
+}
+
 // ── RESULTS (same click-to-pick style as index) ──
 function rResults(){
   view='results';
@@ -530,14 +558,19 @@ function rResults(){
     const h2=getRealTeam(m.hs),a2=getRealTeam(m.as),w=real.picks[m.id];
     const hw=w&&h2&&w.n===h2.n,aw=w&&a2&&w.n===a2.n;
     const ok=!!h2&&!!a2;
+    const sc=SCHEDULE[m.id];
+    const sh=((real.scores||{})[m.id]||{}).h??'';
+    const sa=((real.scores||{})[m.id]||{}).a??'';
     return`<div class="match-card${w?' done':''}" id="rmc-${m.id}">
-    <div class="match-lbl">${m.num}<span>${m.hl} vs ${m.al}</span></div>
+    <div class="match-lbl">${m.num}<span>${m.hl} vs ${m.al}${sc?`<em class="match-sched"> · 📅 ${sc.d} ${sc.t} VET</em>`:''}</span></div>
     <div class="match-team${hw?' winner':''}${!h2?' pending':''}" onclick="${ok?`pickReal('${m.id}','h')`:''}">
       <span style="font-size:1rem">${h2?h2.f:'🏳'}</span><span class="mname" style="flex:1;font-size:.82rem;margin-left:8px">${h2?(e(h2.n)+(h2._from?` <small style="color:#718096">(${h2._from})</small>`:'')):'pendiente…'}</span><span class="win-icon">✓</span>
+      ${ok?`<input class="score-inp" type="number" min="0" max="99" value="${sh}" onclick="event.stopPropagation()" onchange="updateScoreReal('${m.id}','h',this.value)">`:''}
     </div>
     <div class="mdiv"></div>
     <div class="match-team${aw?' winner':''}${!a2?' pending':''}" onclick="${ok?`pickReal('${m.id}','a')`:''}">
       <span style="font-size:1rem">${a2?a2.f:'🏳'}</span><span class="mname" style="flex:1;font-size:.82rem;margin-left:8px">${a2?(e(a2.n)+(a2._from?` <small style="color:#718096">(${a2._from})</small>`:'')):'pendiente…'}</span><span class="win-icon">✓</span>
+      ${ok?`<input class="score-inp" type="number" min="0" max="99" value="${sa}" onclick="event.stopPropagation()" onchange="updateScoreReal('${m.id}','a',this.value)">`:''}
     </div>
     </div>`;
   }

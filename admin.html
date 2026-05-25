@@ -267,15 +267,27 @@ const SCHEDULE={
 
 // REAL RESULTS STATE
 let real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
-// Load real from localStorage; if empty, fall back to Supabase (handled in initReal)
 try{const rr=localStorage.getItem('qm2026_real');if(rr)real=JSON.parse(rr);}catch(e){}
+
+let _saveTimer=null;
 function saveReal(){
   localStorage.setItem('qm2026_real',JSON.stringify(real));
+  // Debounced Supabase save: fires 1.5s after the last action (prevents race conditions
+  // from rapid clicks while keeping Supabase up-to-date for cross-session persistence)
+  if(_saveTimer)clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{
+    _saveTimer=null;
+    supaUpsertReal(real).catch(err=>console.warn('saveReal:',err));
+  },1500);
 }
+
 async function initReal(){
-  const localEmpty=!real.groups||Object.keys(real.groups).length===0;
-  const localHasData=real.thirds&&real.thirds.length>0||real.picks&&Object.keys(real.picks).length>0||real.scores&&Object.keys(real.scores).length>0;
-  if(localEmpty&&!localHasData){
+  // Only fetch from Supabase when local storage has nothing (first visit / cleared browser)
+  const hasLocal=real.groups&&Object.keys(real.groups).length>0
+    ||real.thirds&&real.thirds.length>0
+    ||real.picks&&Object.keys(real.picks).length>0
+    ||real.scores&&Object.keys(real.scores).length>0;
+  if(!hasLocal){
     try{
       const data=await supaGet();
       const realRow=data.find(r=>r.name==='__real__');
@@ -303,17 +315,30 @@ function clearRealResults(){
   render();
 }
 
+let _firstLoad=true;
 function load(){
   document.getElementById('upd').textContent='Actualizando…';
   supaGet().then(data=>{
-    // Never overwrite real from Supabase in the poll — localStorage is authoritative.
-    // real is bootstrapped once in initReal() on page load.
+    const realRow=data.find(r=>r.name==='__real__');
+    // On first load only: if localStorage was empty, seed real from Supabase
+    if(_firstLoad&&realRow&&realRow.data){
+      _firstLoad=false;
+      const hasLocal=real.groups&&Object.keys(real.groups).length>0
+        ||real.thirds&&real.thirds.length>0
+        ||real.picks&&Object.keys(real.picks).length>0
+        ||real.scores&&Object.keys(real.scores).length>0;
+      if(!hasLocal){
+        real={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
+        localStorage.setItem('qm2026_real',JSON.stringify(real));
+      }
+    } else { _firstLoad=false; }
     rows=data.filter(r=>r.name!=='__real__');
     qs=rows.map(r=>({...r.data,_id:r.id,_created:r.created_at}));
     document.getElementById('tot').textContent=qs.length+' quinela'+(qs.length!==1?'s':'');
     document.getElementById('upd').textContent='Actualizado: '+new Date().toLocaleTimeString('es');
     if(view!=='results')render();
   }).catch(err=>{
+    _firstLoad=false;
     document.getElementById('main').innerHTML=`<div style="color:#c53030;background:#fff5f5;border-radius:8px;padding:1rem">Error: ${err.message}</div>`;
     document.getElementById('upd').textContent='Error';
   });
@@ -816,7 +841,7 @@ async function del(id,idx){if(!confirm('¿Eliminar quiniela de "'+qs[idx].name+'
 function gTn(n){for(const g of Object.values(GS)){const t=g.teams.find(x=>x.n===n);if(t)return t;}return null;}
 function e(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-initReal().then(()=>load());
+load();
 setInterval(load,30000);
 </script>
 </body>

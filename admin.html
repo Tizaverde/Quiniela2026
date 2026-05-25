@@ -293,7 +293,7 @@ function load(){
   document.getElementById('upd').textContent='Actualizando…';
   supaGet().then(data=>{
     const realRow=data.find(r=>r.name==='__real__');
-    if(realRow&&realRow.data){
+    if(realRow&&realRow.data&&view!=='results'){
       real={groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data};
       localStorage.setItem('qm2026_real',JSON.stringify(real));
     }

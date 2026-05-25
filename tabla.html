@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin – Quiniela Mundial 2026</title>
+<title>Quiniela Mundial 2026 — Tabla de Posiciones</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,-apple-system,sans-serif;background:#f0f4f8;color:#1a202c;min-height:100vh}
@@ -147,26 +147,13 @@ tr:nth-child(even) td{background:#f7fafc}
 <body>
 <div class="hdr">
   <span style="font-size:1.3rem">🏆</span>
-  <h1>Quiniela Mundial 2026 — Admin</h1>
+  <h1>Quiniela Mundial 2026</h1>
   <span class="badge-live">● EN VIVO</span>
   <span class="badge-gold" id="tot">0 quinielas</span>
 </div>
 <div class="wrap">
-  <!-- Import -->
-  <div class="card">
-    <div class="card-hdr"><h2>📥 Importar quiniela</h2></div>
-    <div class="card-body">
-      <p style="font-size:.82rem;color:#718096;margin-bottom:8px">Pega el JSON del participante y haz clic en Importar.</p>
-      <div style="display:flex;gap:8px;flex-direction:column">
-        <textarea class="import-ta" id="import-ta" placeholder='{"name":"Juan",...}'></textarea>
-        <button class="btn btn-g" style="align-self:flex-start" onclick="importQ()">📥 Importar</button>
-      </div>
-    </div>
-  </div>
   <div class="top-bar">
     <button class="btn btn-dark" onclick="load()">🔄 Actualizar</button>
-    <button class="btn btn-o" style="color:#e53e3e;border-color:#fed7d7" onclick="clearAll()">🗑 Borrar quinielas</button>
-    <button class="btn btn-o" style="color:#c8952a;border-color:#fbd38d" onclick="clearRealResults()">🧹 Limpiar resultados reales</button>
     <span class="upd" id="upd"></span>
   </div>
   <div id="main"><div class="loading"><span class="spin">⚽</span> Cargando…</div></div>
@@ -176,16 +163,6 @@ const SUPA_URL='https://dwqvchnvrdkyeksdebho.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3cXZjaG52cmRreWVrc2RlYmhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjY4NTMsImV4cCI6MjA5NDk0Mjg1M30.8HfPAhVeZynKj9uj9c7RyYrSsdoHxHkudG3jYz6A9sE';
 const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json'};
 async function supaGet(){const r=await fetch(`${SUPA_URL}/rest/v1/quinelas?select=*&order=created_at.asc`,{headers:H});if(!r.ok)throw new Error(await r.text());return r.json();}
-async function supaDelete(id){const r=await fetch(`${SUPA_URL}/rest/v1/quinelas?id=eq.${id}`,{method:'DELETE',headers:H});if(!r.ok)throw new Error(await r.text());}
-async function supaInsert(name,data){const r=await fetch(`${SUPA_URL}/rest/v1/quinelas`,{method:'POST',headers:{...H,'Prefer':'return=minimal'},body:JSON.stringify({name,data})});if(!r.ok)throw new Error(await r.text());}
-async function supaUpsertReal(data){
-  const chk=await fetch(`${SUPA_URL}/rest/v1/quinelas?name=eq.__real__&select=id`,{headers:H});
-  const ex=await chk.json();
-  if(ex.length>0){
-    const u=await fetch(`${SUPA_URL}/rest/v1/quinelas?id=eq.${ex[0].id}`,{method:'PATCH',headers:{...H,'Prefer':'return=minimal'},body:JSON.stringify({data})});
-    if(!u.ok)throw new Error(await u.text());
-  }else{await supaInsert('__real__',data);}
-}
 
 const GS={
   A:{teams:[{n:'México',f:'🇲🇽'},{n:'Sudáfrica',f:'🇿🇦'},{n:'Corea del Sur',f:'🇰🇷'},{n:'Chequia',f:'🇨🇿'}]},
@@ -265,35 +242,14 @@ const SCHEDULE={
   p103:{d:'18 jul',t:'17:00'},p104:{d:'19 jul',t:'15:00'}
 };
 
-// REAL RESULTS STATE
 let real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
-// Load real from localStorage
-try{const rr=localStorage.getItem('qm2026_real');if(rr)real=JSON.parse(rr);}catch(e){}
-function saveReal(){
-  localStorage.setItem('qm2026_real',JSON.stringify(real));
-  supaUpsertReal(real).catch(err=>console.warn('saveReal Supabase:',err));
-}
-
-// PARTICIPANTS
-let rows=[];
-let qs=[];
-let view='overview';
-let selIdx=null;
-
-// ── SUPABASE ──
-function clearRealResults(){
-  if(!confirm('¿Limpiar TODOS los resultados reales? Los puntajes se resetearán a 0.'))return;
-  real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
-  saveReal();
-  alert('✅ Resultados reales limpiados.');
-  render();
-}
+let rows=[],qs=[],view='overview',selIdx=0;
 
 function load(){
   document.getElementById('upd').textContent='Actualizando…';
   supaGet().then(data=>{
     const realRow=data.find(r=>r.name==='__real__');
-    if(realRow&&realRow.data){real=realRow.data;localStorage.setItem('qm2026_real',JSON.stringify(real));}
+    if(realRow&&realRow.data){real=realRow.data;}
     rows=data.filter(r=>r.name!=='__real__');
     qs=rows.map(r=>({...r.data,_id:r.id,_created:r.created_at}));
     document.getElementById('tot').textContent=qs.length+' quinela'+(qs.length!==1?'s':'');
@@ -303,66 +259,6 @@ function load(){
     document.getElementById('main').innerHTML=`<div style="color:#c53030;background:#fff5f5;border-radius:8px;padding:1rem">Error: ${err.message}</div>`;
     document.getElementById('upd').textContent='Error';
   });
-}
-
-async function importQ(){
-  const ta=document.getElementById('import-ta');
-  if(!ta||!ta.value.trim()){alert('Pega el JSON primero');return;}
-  try{
-    const d=JSON.parse(ta.value.trim());
-    if(!d.name||!d.groups)throw new Error('Formato inválido');
-    const existing=qs.find(q=>q.name.toLowerCase()===d.name.toLowerCase());
-    if(existing){if(!confirm('Ya existe quiniela de "'+d.name+'". ¿Reemplazar?'))return;await supaDelete(existing._id);}
-    await supaInsert(d.name,d);
-    ta.value='';
-    await load();
-    alert('✅ Quiniela de "'+d.name+'" importada.');
-  }catch(ex){alert('❌ '+ex.message);}
-}
-
-async function clearAll(){
-  if(!confirm('¿Borrar TODAS las quinielas?'))return;
-  try{for(const r of rows)await supaDelete(r.id);load();}catch(ex){alert('Error: '+ex.message);}
-}
-
-// ── THIRDS RESOLVER (for real results) ──
-function getRealThirdSlot(slot){
-  if(!real.thirds||real.thirds.length!==8)return null;
-  const key=[...real.thirds].sort().join('');
-  const entry=TT[key];
-  if(!entry)return null;
-  const code=entry.split(',')[slot];
-  if(!code)return null;
-  const g=code[1];
-  const groupOrder=real.groups[g];
-  if(!groupOrder)return null;
-  const name=groupOrder[2];
-  if(!name)return null;
-  const t=GS[g]?GS[g].teams.find(x=>x.n===name):null;
-  return t?{...t,_from:'3°Grp.'+g}:null;
-}
-
-function getRealTeam(src){
-  if(src.t==='g'){
-    const ord=real.groups[src.g];
-    if(!ord)return null;
-    const name=ord[src.p];
-    if(!name)return null;
-    const t=GS[src.g].teams.find(x=>x.n===name);
-    return t||{n:name,f:'🏳'};
-  }
-  if(src.t==='w')return real.picks[src.m]||null;
-  if(src.t==='l'){
-    const allM=[...R16,...QF,...CF,...SF,FN];
-    const m=allM.find(x=>x.id===src.m);
-    if(!m||!real.picks[src.m])return null;
-    const winner=real.picks[src.m];
-    const h=getRealTeam(m.hs),a=getRealTeam(m.as);
-    if(!h||!a)return null;
-    return h.n===winner.n?a:h;
-  }
-  if(src.t==='3rd')return getRealThirdSlot(src.slot);
-  return null;
 }
 
 // ── SCORING ──
@@ -430,7 +326,6 @@ function hasReal(){return real&&((real.picks&&Object.keys(real.picks).length>0)|
 function render(){
   if(view==='overview')rOverview();
   else if(view==='scores')rScores();
-  else if(view==='results')rResults();
   else if(view==='compare')rCompare();
   else if(view==='detail')rDetail(selIdx);
 }
@@ -440,7 +335,6 @@ function tabs(active){
     <button class="tab${active==='overview'?' active':''}" onclick="view='overview';render()">📊 Resumen</button>
     <button class="tab${active==='scores'?' active':''}" onclick="view='scores';render()">🏅 Puntajes</button>
     <button class="tab${active==='compare'?' active':''}" onclick="view='compare';render()">📋 Comparar</button>
-    <button class="tab tab-gold${active==='results'?' active':''}" onclick="view='results';render()">✏️ Resultados reales</button>
   </div>`;
 }
 
@@ -478,13 +372,12 @@ function rOverview(){
   <div class="card"><div class="card-hdr"><h2>👟 Goleadores pronosticados</h2></div><div class="card-body">
   ${ss.slice(0,8).map(([n,c])=>{const pct=Math.round(c/tot*100);return`<div class="prow"><span style="min-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e(n)}</span><div class="pw"><div class="pf pf-a" style="width:${pct}%"></div></div><span style="min-width:48px;text-align:right;color:#718096;font-size:.75rem">${c} (${pct}%)</span></div>`;}).join('')}</div></div>
   <div class="card"><div class="card-hdr"><h2>👥 Participantes (${tot})</h2></div><div class="card-body">
-  <table><thead><tr><th>#</th><th>Nombre</th><th>Campeón</th><th>Goleador</th><th>Fecha</th><th></th></tr></thead><tbody>
+  <table><thead><tr><th>#</th><th>Nombre</th><th>Campeón</th><th>Goleador</th><th>Fecha</th></tr></thead><tbody>
   ${qs.map((q,i)=>{const c=q.picks&&q.picks['p104'];return`<tr>
     <td style="color:#a0aec0">${i+1}</td>
     <td class="nl" onclick="selIdx=${i};view='detail';render()">${e(q.name)}</td>
     <td>${c?c.f+' '+e(c.n):'—'}</td><td>${e(q.goleador)||'—'}</td>
     <td style="font-size:.7rem;color:#a0aec0">${q._created?new Date(q._created).toLocaleDateString('es'):''}</td>
-    <td><button class="btn btn-red" onclick="del('${q._id}',${i})">🗑</button></td>
   </tr>`;}).join('')}</tbody></table></div></div>`;
   document.getElementById('main').innerHTML=h;
 }
@@ -502,7 +395,7 @@ function rScores(){
   ].map(x=>`<div class="pts-key-card"><h4>${x.r}</h4><ul>${x.items.map(i=>`<li><b>✓</b>${i}</li>`).join('')}</ul></div>`).join('')}</div>`;
 
   if(!hasReal()){
-    document.getElementById('main').innerHTML=tabs('scores')+`<div class="alert-info">ℹ️ Ve a <strong>✏️ Resultados reales</strong> para ingresar los resultados del torneo y calcular puntajes.</div><div class="card"><div class="card-hdr"><h2>📌 Sistema de puntos</h2></div><div class="card-body">${ptsKey}</div></div>`;return;
+    document.getElementById('main').innerHTML=tabs('scores')+`<div class="alert-info">ℹ️ Los resultados reales aún no han sido cargados. Los puntajes se calcularán conforme avance el torneo.</div><div class="card"><div class="card-hdr"><h2>📌 Sistema de puntos</h2></div><div class="card-body">${ptsKey}</div></div>`;return;
   }
   const sc=qs.map(q=>({...q,...scoreQ(q)})).sort((a,b)=>b.total-a.total);
   function pts(a,b,c){const t=a+b+c;return t>0?`<span style="color:#1a6b3c;font-weight:700">${t}</span><br><small style="color:#a0aec0;font-size:.65rem">${a}+${b}+${c}</small>`:`<span class="pts-zero">0</span>`;}
@@ -521,146 +414,6 @@ function rScores(){
   <td class="pts-cell" style="font-size:1.1rem;color:#1a3a5c;font-weight:800">${s.total}</td></tr>`;}).join('')}
   </tbody></table></div></div></div>`;
   document.getElementById('main').innerHTML=h;
-}
-
-function updateScoreReal(id,side,val){
-  if(!real.scores)real.scores={};
-  if(!real.scores[id])real.scores[id]={h:'',a:''};
-  const n=parseInt(val);
-  real.scores[id][side]=isNaN(n)?'':n;
-  saveReal();
-  const sc=real.scores[id];
-  if(sc.h!==''&&sc.a!==''){
-    const hv=parseInt(sc.h),av=parseInt(sc.a);
-    if(hv>av)pickReal(id,'h');
-    else if(av>hv)pickReal(id,'a');
-    else rResults();
-  }
-}
-
-// ── RESULTS (same click-to-pick style as index) ──
-function rResults(){
-  view='results';
-  let h=tabs('results')+`<div class="alert-info">✏️ Ingresa los resultados reales conforme avanza el torneo. Los puntajes se calculan automáticamente.</div>`;
-
-  // GROUPS
-  h+=`<div class="card"><div class="card-hdr"><h2>📊 Fase de Grupos — Resultados Reales</h2><span style="font-size:.75rem;color:#718096">Toca cada equipo en orden: 1°, 2°, 3°, 4°</span></div><div class="card-body"><div class="groups-real-grid">`;
-  Object.keys(GS).forEach(g=>{
-    const order=real.groups[g]||[null,null,null,null];
-    const rankedSet=new Set(order.filter(Boolean));
-    h+=`<div class="group-real-card"><div class="group-real-hdr">Grupo ${g} <span style="opacity:.75;font-size:.7rem">${rankedSet.size}/4</span></div>`;
-    GS[g].teams.forEach(t=>{
-      const pos=order.indexOf(t.n);
-      const ranked=pos>=0;
-      const rowCls=ranked?`pos${pos+1}`:'';
-      const badgeCls=ranked?`pr${pos+1}`:'pr-empty';
-      const badgeTxt=ranked?(pos+1)+'°':'·';
-      h+=`<div class="team-real-row ${rowCls}" onclick="toggleRealRank('${g}','${e(t.n)}')">
-        <div class="pos-badge-real ${badgeCls}">${badgeTxt}</div>
-        <span style="font-size:1rem">${t.f}</span>
-        <span style="font-size:.82rem;font-weight:${ranked&&pos<2?600:400};flex:1">${e(t.n)}</span>
-        ${ranked&&pos===0?`<span class="chip chip-g" style="font-size:.65rem">1°</span>`:''}
-        ${ranked&&pos===1?`<span class="chip" style="background:#bee3f8;color:#2b6cb0;font-size:.65rem">2°</span>`:''}
-      </div>`;
-    });
-    h+=`</div>`;
-  });
-  h+=`</div></div></div>`;
-
-  // THIRDS
-  const cnt=(real.thirds||[]).length;
-  h+=`<div class="card"><div class="card-hdr"><h2>🥉 Terceros que clasificaron</h2><span class="chip ${cnt===8?'chip-g':'chip-3'}" id="thirds-cnt-real">${cnt}/8</span></div><div class="card-body">
-  <p style="font-size:.82rem;color:#718096;margin-bottom:10px">¿Cuáles 8 grupos clasificaron su 3° lugar?</p>
-  <div class="thirds-real-grid">${Object.keys(GS).map(g=>{
-    const sel=(real.thirds||[]).includes(g);
-    const name=real.groups[g]&&real.groups[g][2]||'?';
-    const t=GS[g].teams.find(x=>x.n===name)||{f:'🏳'};
-    return`<button class="third-real-btn${sel?' selected':''}" id="rb3r_${g}" onclick="toggleRealThird('${g}')"><span class="chk">${sel?'✓':''}</span><span>${t.f}</span><strong>3°${g}</strong>: ${e(name)}</button>`;
-  }).join('')}</div></div></div>`;
-
-  // MATCH ROUNDS
-  function mCardReal(m){
-    const h2=getRealTeam(m.hs),a2=getRealTeam(m.as),w=real.picks[m.id];
-    const hw=w&&h2&&w.n===h2.n,aw=w&&a2&&w.n===a2.n;
-    const ok=!!h2&&!!a2;
-    const sc=SCHEDULE[m.id];
-    const sh=((real.scores||{})[m.id]||{}).h??'';
-    const sa=((real.scores||{})[m.id]||{}).a??'';
-    const isTie=sh!==''&&sa!==''&&parseInt(sh)===parseInt(sa);
-    return`<div class="match-card${w?' done':''}" id="rmc-${m.id}">
-    <div class="match-lbl">${m.num}<span>${m.hl} vs ${m.al}${sc?`<em class="match-sched"> · 📅 ${sc.d} ${sc.t} VET</em>`:''}</span></div>
-    <div class="match-team${hw?' winner':''}${!h2?' pending':''}" onclick="${ok?`pickReal('${m.id}','h')`:''}">
-      <span style="font-size:1rem">${h2?h2.f:'🏳'}</span><span class="mname" style="flex:1;font-size:.82rem;margin-left:8px">${h2?(e(h2.n)+(h2._from?` <small style="color:#718096">(${h2._from})</small>`:'')):'pendiente…'}</span><span class="win-icon">✓</span>
-      ${ok?`<input class="score-inp" type="number" min="0" max="99" value="${sh}" onclick="event.stopPropagation()" onchange="updateScoreReal('${m.id}','h',this.value)">`:''}
-    </div>
-    <div class="mdiv"></div>
-    <div class="match-team${aw?' winner':''}${!a2?' pending':''}" onclick="${ok?`pickReal('${m.id}','a')`:''}">
-      <span style="font-size:1rem">${a2?a2.f:'🏳'}</span><span class="mname" style="flex:1;font-size:.82rem;margin-left:8px">${a2?(e(a2.n)+(a2._from?` <small style="color:#718096">(${a2._from})</small>`:'')):'pendiente…'}</span><span class="win-icon">✓</span>
-      ${ok?`<input class="score-inp" type="number" min="0" max="99" value="${sa}" onclick="event.stopPropagation()" onchange="updateScoreReal('${m.id}','a',this.value)">`:''}
-    </div>
-    ${ok&&isTie&&!w?`<div class="tie-msg">⚽ Empate — toca el equipo que pasa en penales</div>`:''}
-    </div>`;
-  }
-
-  h+=`<div class="card"><div class="card-hdr"><h2>⚔️ Fase Eliminatoria — Resultados Reales</h2><span style="font-size:.75rem;color:#718096">Toca el equipo ganador</span></div><div class="card-body">`;
-  h+=`<div class="round-hdr">16avos de Final<small>toca el ganador</small></div><div class="match-list" id="r16-real">${R16.map(m=>mCardReal(m)).join('')}</div>`;
-  h+=`<div class="round-hdr" style="margin-top:1rem">8avos de Final<small>toca el ganador</small></div><div class="match-list" id="qf-real">${QF.map(m=>mCardReal(m)).join('')}</div>`;
-  h+=`<div class="round-hdr" style="margin-top:1rem">4tos de Final<small>toca el ganador</small></div><div class="match-list" id="cf-real">${CF.map(m=>mCardReal(m)).join('')}</div>`;
-  h+=`<div class="round-hdr" style="margin-top:1rem">Semifinal<small>toca el ganador</small></div><div class="match-list" id="sf-real">${SF.map(m=>mCardReal(m)).join('')}</div>`;
-  h+=`<div class="round-hdr" style="margin-top:1rem;background:#c8952a">🥉 3° y 4° Lugar</div><div class="match-list">${mCardReal(TP)}</div>`;
-  h+=`<div class="round-hdr" style="margin-top:1rem">🏆 Gran Final</div><div class="match-list">${mCardReal(FN)}</div>`;
-  h+=`</div></div>`;
-
-  // GOLEADOR
-  h+=`<div class="card"><div class="card-hdr"><h2>👟 Goleador real del torneo</h2></div><div class="card-body">
-  <input type="text" id="real-gol" value="${e(real.goleador||'')}" placeholder="Nombre del goleador real…"
-  style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:.85rem;font-family:inherit;outline:none"
-  oninput="real.goleador=this.value;saveReal()">
-  </div></div>`;
-
-  h+=`<div style="text-align:center;margin-top:1rem"><button class="btn btn-gold" onclick="view='scores';render()">🏅 Ver puntajes →</button></div>`;
-  document.getElementById('main').innerHTML=h;
-}
-
-function toggleRealRank(g,teamName){
-  if(!real.groups)real.groups={};
-  if(!real.groups[g])real.groups[g]=[null,null,null,null];
-  const order=[...real.groups[g]];
-  const pos=order.indexOf(teamName);
-  if(pos>=0){
-    order[pos]=null;
-    const filled=order.filter(Boolean);
-    while(filled.length<4)filled.push(null);
-    real.groups[g]=filled;
-  } else {
-    const next=order.indexOf(null);
-    if(next<0)return;
-    order[next]=teamName;
-    real.groups[g]=order;
-  }
-  saveReal();
-  // Re-render just this group card
-  rResults();
-}
-
-function toggleRealThird(g){
-  if(!real.thirds)real.thirds=[];
-  const i=real.thirds.indexOf(g);
-  if(i>=0)real.thirds.splice(i,1);
-  else{if(real.thirds.length>=8){alert('Solo 8 terceros');return;}real.thirds.push(g);}
-  saveReal();
-  rResults();
-}
-
-function pickReal(id,side){
-  const allM=[...R16,...QF,...CF,...SF,TP,FN];
-  const m=allM.find(x=>x.id===id);if(!m)return;
-  const src=side==='h'?m.hs:m.as;
-  const t=getRealTeam(src);if(!t)return;
-  if(!real.picks)real.picks={};
-  real.picks[id]={n:t.n,f:t.f};
-  saveReal();
-  rResults();
 }
 
 // ── COMPARE ──
@@ -726,7 +479,6 @@ function rDetail(idx){
 }
 
 // ── UTILS ──
-async function del(id,idx){if(!confirm('¿Eliminar quiniela de "'+qs[idx].name+'"?'))return;try{await supaDelete(id);load();}catch(ex){alert('Error: '+ex.message);}}
 function gTn(n){for(const g of Object.values(GS)){const t=g.teams.find(x=>x.n===n);if(t)return t;}return null;}
 function e(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 

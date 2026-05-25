@@ -271,7 +271,6 @@ let real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
 try{const rr=localStorage.getItem('qm2026_real');if(rr)real=JSON.parse(rr);}catch(e){}
 function saveReal(){
   localStorage.setItem('qm2026_real',JSON.stringify(real));
-  supaUpsertReal(real).catch(err=>console.warn('saveReal Supabase:',err));
 }
 
 // PARTICIPANTS
@@ -285,6 +284,7 @@ function clearRealResults(){
   if(!confirm('¿Limpiar TODOS los resultados reales? Los puntajes se resetearán a 0.'))return;
   real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
   saveReal();
+  supaUpsertReal(real).catch(err=>console.warn('clearReal:',err));
   alert('✅ Resultados reales limpiados.');
   render();
 }
@@ -485,10 +485,11 @@ function render(){
 }
 
 function tabs(active){
+  const pre=active==='results'?'supaUpsertReal(real).catch(()=>{});':'';
   return`<div class="tabs">
-    <button class="tab${active==='overview'?' active':''}" onclick="view='overview';render()">📊 Resumen</button>
-    <button class="tab${active==='scores'?' active':''}" onclick="view='scores';render()">🏅 Puntajes</button>
-    <button class="tab${active==='compare'?' active':''}" onclick="view='compare';render()">📋 Comparar</button>
+    <button class="tab${active==='overview'?' active':''}" onclick="${pre}view='overview';render()">📊 Resumen</button>
+    <button class="tab${active==='scores'?' active':''}" onclick="${pre}view='scores';render()">🏅 Puntajes</button>
+    <button class="tab${active==='compare'?' active':''}" onclick="${pre}view='compare';render()">📋 Comparar</button>
     <button class="tab tab-gold${active==='results'?' active':''}" onclick="view='results';render()">✏️ Resultados reales</button>
   </div>`;
 }

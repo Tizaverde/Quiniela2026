@@ -269,10 +269,18 @@ const SCHEDULE={
 let real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
 try{const rr=localStorage.getItem('qm2026_real');if(rr)real=JSON.parse(rr);}catch(e){}
 
+let _supaInProgress=false,_supaAgain=false;
+async function _flushSave(){
+  if(_supaInProgress){_supaAgain=true;return;}
+  _supaInProgress=true;_supaAgain=false;
+  try{await supaUpsertReal(real);}catch(e){console.warn('saveReal:',e);}
+  _supaInProgress=false;
+  if(_supaAgain)_flushSave();
+}
 function saveReal(){
   real._ts=Date.now();
   localStorage.setItem('qm2026_real',JSON.stringify(real));
-  supaUpsertReal(real).catch(err=>console.warn('saveReal:',err));
+  _flushSave();
 }
 
 let _scoreTimer=null;

@@ -113,6 +113,19 @@ input[type=text]:focus{border-color:#1a6b3c}
 .score-inp:focus{border-color:#1a6b3c}
 .tie-msg{font-size:.72rem;color:#c05621;background:#fffaf0;border:1px solid #fbd38d;border-radius:6px;padding:4px 10px;margin:4px 12px 8px;text-align:center}
 .match-sched{font-size:.58rem;color:rgba(255,255,255,.7);font-weight:400;font-style:normal;margin-left:4px}
+.prize-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
+.prize-card{padding:12px 8px;border-radius:10px;border:1.5px solid #e2e8f0;text-align:center}
+.prize-card.gold{background:linear-gradient(135deg,#fffbf0,#fef9e7);border-color:#d69e2e}
+.prize-card.silver{background:#f8fafc;border-color:#a0aec0}
+.prize-card.bronze{background:#fff8f5;border-color:#cd7f32}
+.prize-pos{font-size:1.6rem;margin-bottom:4px}
+.prize-pct{font-size:1.3rem;font-weight:800;color:#1a3a5c}
+.prize-lbl{font-size:.68rem;color:#718096;margin-top:3px}
+.pts-key{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.pts-key-card{background:#f7fafc;border-radius:8px;padding:10px 12px;border:1px solid #e2e8f0;font-size:.76rem}
+.pts-key-card h4{font-weight:700;color:#1a3a5c;margin-bottom:5px;font-size:.78rem}
+.pts-key-card li{list-style:none;padding:2px 0;color:#4a5568;display:flex;gap:6px}
+.pts-key-card li b{color:#1a6b3c;min-width:10px}
 </style>
 </head>
 <body>
@@ -205,7 +218,7 @@ const SCORERS=['Kylian Mbappé (Francia)','Lionel Messi (Argentina)','Erling Haa
 const STEP_LABELS=['Nombre','Fase de Grupos','Mejores Terceros','16avos','8avos','4tos','Semifinal','3°/4° y Final','Goleador'];
 const STEPS=['name','groups','thirds','r16','qf','cf','sf','final','gol'];
 
-let ST={step:0,name:'',groups:{},thirds:[],picks:{},scores:{},goleador:''};
+let ST={step:0,name:'',phone:'',groups:{},thirds:[],picks:{},scores:{},goleador:''};
 Object.keys(GS).forEach(g=>{ST.groups[g]=[null,null,null,null];}); // null = unranked
 const APP=document.getElementById('app');
 
@@ -277,20 +290,66 @@ function navRow(extraDisabled){
 
 // ── NAME ──
 function rName(){
+  const canStart=!!(ST.name&&ST.phone);
   APP.innerHTML=`<div class="hero"><div class="emo">⚽</div><h2>Quiniela Mundial 2026</h2>
-  <p>Predice los grupos, elige los mejores terceros, avanza ronda a ronda hasta el campeón y el goleador.</p></div>
-  <div class="card"><div class="card-hdr"><h2>¿Cuál es tu nombre?</h2></div>
-  <div class="card-body"><input type="text" id="ni" placeholder="Escribe tu nombre" maxlength="30" value="${e(ST.name)}" oninput="ST.name=this.value.trim()"></div></div>
-  <button class="btn btn-g btn-block" id="bstart" onclick="next()" ${!ST.name?'disabled':''}>Comenzar →</button>`;
-  const i=document.getElementById('ni');
-  if(i){i.focus();i.addEventListener('input',()=>{document.getElementById('bstart').disabled=!i.value.trim();});}
+  <p>Predice grupos, terceros y fase eliminatoria partido a partido hasta el campeón y el goleador del torneo.</p></div>
+
+  <div class="card"><div class="card-hdr"><h2>🏆 Premios</h2></div><div class="card-body">
+  <div class="prize-grid">
+    <div class="prize-card gold"><div class="prize-pos">🥇</div><div class="prize-pct">65%</div><div class="prize-lbl">1er lugar</div></div>
+    <div class="prize-card silver"><div class="prize-pos">🥈</div><div class="prize-pct">20%</div><div class="prize-lbl">2do lugar</div></div>
+    <div class="prize-card bronze"><div class="prize-pos">🥉</div><div class="prize-pct">10%</div><div class="prize-lbl">3er lugar</div></div>
+  </div>
+  </div></div>
+
+  <div class="card"><div class="card-hdr"><h2>📌 Sistema de puntos</h2></div><div class="card-body">
+  <div class="pts-key">
+    <div class="pts-key-card"><h4>Fase de Grupos</h4><ul>
+      <li><b>4</b> pts por equipo que clasifica a 16avos</li>
+      <li><b>2</b> pts bono por posición exacta (1°/2°/3°)</li>
+    </ul></div>
+    <div class="pts-key-card"><h4>16avos → Semis</h4><ul>
+      <li><b>1</b> pt por acertar el ganador del partido</li>
+      <li><b>+2</b> pts si el marcador es exacto</li>
+      <li><b>+3</b> pts bono si ganador Y marcador exacto</li>
+      <li><b>4/7/10</b> pts por equipo que avanza a 8avos/4tos/semis</li>
+      <li><b>1</b> pt si el equipo está en la llave correcta</li>
+    </ul></div>
+    <div class="pts-key-card"><h4>Final</h4><ul>
+      <li><b>15</b> pts por finalista correcto</li>
+      <li><b>5</b> pts si en la llave correcta</li>
+      <li><b>1</b> pt ganador · <b>+10</b> marcador exacto · <b>+3</b> bono</li>
+    </ul></div>
+    <div class="pts-key-card"><h4>3° Lugar &amp; Goleador</h4><ul>
+      <li><b>1+2+3</b> pts partido 3er lugar (igual que semis)</li>
+      <li><b>5</b> pts por goleador exacto</li>
+    </ul></div>
+  </div>
+  </div></div>
+
+  <div class="card"><div class="card-hdr"><h2>📋 Cómo funciona</h2></div><div class="card-body" style="font-size:.83rem;color:#4a5568;line-height:1.7">
+    <b>Paso 1 — Fase de Grupos:</b> ordena los 4 equipos de cada grupo (1°, 2°, 3°, 4°) según tu predicción.<br>
+    <b>Paso 2 — Mejores Terceros:</b> elige los 8 grupos cuyos terceros clasifican a 16avos.<br>
+    <b>Paso 3 al 7 — Fase Eliminatoria:</b> ingresa el marcador de cada partido y toca el equipo ganador. En empates, toca quién pasa en penales.<br>
+    <b>Paso 8 — Goleador:</b> elige el jugador que crees que será el máximo anotador del torneo.
+  </div></div>
+
+  <div class="card"><div class="card-hdr"><h2>👤 Tus datos</h2></div>
+  <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+    <input type="text" id="ni" placeholder="Nombre completo" maxlength="30" value="${e(ST.name)}"
+      oninput="ST.name=this.value.trim();document.getElementById('bstart').disabled=!(ST.name&&ST.phone);">
+    <input type="tel" id="pi" placeholder="Número de teléfono" maxlength="20" value="${e(ST.phone)}"
+      oninput="ST.phone=this.value.trim();document.getElementById('bstart').disabled=!(ST.name&&ST.phone);">
+  </div></div>
+  <button class="btn btn-g btn-block" id="bstart" onclick="next()" ${!canStart?'disabled':''}>Comenzar →</button>`;
+  const i=document.getElementById('ni');if(i)i.focus();
 }
 
 // ── GROUPS: click to rank ──
 function rGroups(){
   const allDone=Object.keys(GS).every(g=>ST.groups[g].every(v=>v!==null));
   APP.innerHTML=`${nav()}
-  <div class="info-box">👆 Toca cada equipo en el orden que crees que van a terminar (1°, 2°, 3°, 4°). Toca de nuevo para desmarcar.</div>
+  <div class="info-box">👆 Toca los equipos en orden de clasificación: 1°, 2°, 3°, 4°. Toca de nuevo para desmarcar. Debes ordenar los 4 equipos de cada grupo para continuar.</div>
   <div class="groups-all">${Object.keys(GS).map(g=>groupCard(g)).join('')}</div>
   ${navRow(!allDone)}`;
 }
@@ -360,7 +419,7 @@ function rThirds(){
   <div class="card"><div class="card-hdr"><h2>Elige los 8 mejores terceros</h2>
   <span class="badge ${cnt===8?'b-green':'b-amber'}">${cnt}/8</span></div>
   <div class="card-body">
-  <p style="font-size:.82rem;color:#718096;margin-bottom:12px">¿Cuáles 8 equipos en <strong>3° lugar</strong> crees que clasifican a 16avos? Tu elección determina los cruces.</p>
+  <p style="font-size:.82rem;color:#718096;margin-bottom:12px">¿Cuáles 8 grupos clasifican su equipo en <strong>3° lugar</strong> a los 16avos? Tu elección determina los cruces de la fase eliminatoria. Debes elegir exactamente 8.</p>
   <div class="thirds-grid">${thirds.map(({g,t})=>{
     const sel=ST.thirds.includes(g);
     return`<button class="third-btn${sel?' selected':''}" onclick="tog3('${g}')">
@@ -410,7 +469,8 @@ function mCard(m){
 
 function rMatchRound(title,matches){
   APP.innerHTML=`${nav()}
-  <div class="round-hdr">${title}<small>toca el equipo ganador</small></div>
+  <div class="info-box">⚽ Ingresa el marcador de cada partido y toca el equipo ganador. Si hay empate, toca el equipo que pasa en penales.</div>
+  <div class="round-hdr">${title}<small>ingresa marcador y toca el ganador</small></div>
   <div class="match-list">${matches.map(m=>mCard(m)).join('')}</div>
   ${navRow()}`;
 }
@@ -531,7 +591,7 @@ function allResolvablePicked(matches){
 }
 function next(){
   const s=STEPS[ST.step];
-  if(s==='name'&&!ST.name)return;
+  if(s==='name'&&(!ST.name||!ST.phone))return;
   if(s==='groups'){
     const allDone=Object.keys(GS).every(g=>ST.groups[g].every(v=>v!==null));
     if(!allDone){alert('Completa el orden de todos los grupos primero');return;}
@@ -579,7 +639,7 @@ async function save(){
   ov.innerHTML='<div class="saving-box"><span class="spin">⚽</span>Guardando tu quiniela…</div>';
   document.body.appendChild(ov);
   try{
-    const data={name:ST.name,groups:ST.groups,thirds:ST.thirds,picks:ST.picks,scores:ST.scores,goleador:ST.goleador,savedAt:new Date().toISOString()};
+    const data={name:ST.name,phone:ST.phone,groups:ST.groups,thirds:ST.thirds,picks:ST.picks,scores:ST.scores,goleador:ST.goleador,savedAt:new Date().toISOString()};
     await supaInsert(ST.name,data);
     document.body.removeChild(ov);
     rDone();
@@ -604,7 +664,7 @@ function rDone(){
 }
 
 function reset(){
-  ST={step:0,name:'',groups:{},thirds:[],picks:{},scores:{},goleador:''};
+  ST={step:0,name:'',phone:'',groups:{},thirds:[],picks:{},scores:{},goleador:''};
   Object.keys(GS).forEach(g=>{ST.groups[g]=[null,null,null,null];});
   R();
 }

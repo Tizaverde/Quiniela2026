@@ -273,7 +273,8 @@ let _supaInProgress=false,_supaAgain=false;
 async function _flushSave(){
   if(_supaInProgress){_supaAgain=true;return;}
   _supaInProgress=true;_supaAgain=false;
-  try{await supaUpsertReal(real);}catch(e){console.warn('saveReal:',e);}
+  const snap=JSON.parse(JSON.stringify(real));
+  try{await supaUpsertReal(snap);}catch(e){console.warn('saveReal:',e);}
   _supaInProgress=false;
   if(_supaAgain)_flushSave();
 }
@@ -307,15 +308,22 @@ function load(){
     if(_firstLoad){
       _firstLoad=false;
       const supaReal=realRow&&realRow.data?{groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data}:null;
+      const supTs=supaReal&&supaReal._ts||0;
+      const locTs=real._ts||0;
       const supaHas=supaReal&&((Object.keys(supaReal.groups||{}).length>0)||(Object.keys(supaReal.picks||{}).length>0));
       const locHas=(Object.keys(real.groups||{}).length>0)||(Object.keys(real.picks||{}).length>0);
-      if(supaHas){
-        // Supabase has real data → use it (shared across all devices)
+      if(supTs>locTs){
+        // Supabase is newer (other device saved more recently) → use it
         real=supaReal;
         localStorage.setItem('qm2026_real',JSON.stringify(real));
-      } else if(locHas){
-        // Supabase is empty/missing but local has data → push local up to Supabase
-        saveReal();
+      } else if(locTs>supTs){
+        // Local is newer → keep local, push to Supabase
+        _flushSave();
+      } else {
+        // Same timestamp (both 0 = old data without _ts, or equal)
+        if(supaHas&&!locHas){real=supaReal;localStorage.setItem('qm2026_real',JSON.stringify(real));}
+        else if(locHas&&!supaHas){_flushSave();}
+        // Both have data → keep local (current device is authoritative)
       }
     }
     rows=data.filter(r=>r.name!=='__real__');
@@ -504,7 +512,7 @@ function render(){
 }
 
 function tabs(active){
-  const pre=active==='results'?'supaUpsertReal(real).catch(()=>{});':'';
+  const pre=active==='results'?'saveReal();':'';
   return`<div class="tabs">
     <button class="tab${active==='overview'?' active':''}" onclick="${pre}view='overview';render()">📊 Resumen</button>
     <button class="tab${active==='scores'?' active':''}" onclick="${pre}view='scores';render()">🏅 Puntajes</button>
@@ -618,15 +626,18 @@ function saveScoreOnly(id,side,val){
   real.scores[id][side]=isNaN(n)?'':n;
   localStorage.setItem('qm2026_real',JSON.stringify(real));
   if(_scoreTimer)clearTimeout(_scoreTimer);
-  _scoreTimer=setTimeout(()=>{_scoreTimer=null;supaUpsertReal(real).catch(err=>console.warn('saveScore:',err));},1000);
+  _scoreTimer=setTimeout(()=>{_scoreTimer=null;saveReal();},1000);
 }
 
 async function guardarResultados(){
   const btn=document.getElementById('btn-guardar');
   if(btn){btn.disabled=true;btn.textContent='Guardando…';}
+  if(_scoreTimer){clearTimeout(_scoreTimer);_scoreTimer=null;}
+  real._ts=Date.now();
+  localStorage.setItem('qm2026_real',JSON.stringify(real));
+  const snap=JSON.parse(JSON.stringify(real));
   try{
-    await supaUpsertReal(real);
-    localStorage.setItem('qm2026_real',JSON.stringify(real));
+    await supaUpsertReal(snap);
     if(btn){btn.textContent='✅ Guardado';btn.style.background='#1a6b3c';setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Guardar';btn.style.background='';},2000);}
   }catch(err){
     if(btn){btn.textContent='❌ Error';btn.style.background='#e53e3e';setTimeout(()=>{btn.disabled=false;btn.textContent='💾 Guardar';btn.style.background='';},2500);}
@@ -763,17 +774,21 @@ function pickReal(id,side){
 function rCompare(){
   view='compare';
   if(qs.length===0){rOverview();return;}
+  const rC=real.picks&&real.picks['p104'];
+  const rG=real.goleador;
+  const nc=qs.length+2;
   let h=tabs('compare')+`<div class="cmp-wrap"><table class="cmp-table">
-  <thead><tr><th>Predicción</th>${qs.map(q=>`<th>${e(q.name)}</th>`).join('')}</tr></thead><tbody>
-  <tr><td><strong>🏆 Campeón</strong></td>${qs.map(q=>{const c=q.picks&&q.picks['p104'];return`<td>${c?c.f+' '+e(c.n):'—'}</td>`;}).join('')}</tr>
-  <tr><td><strong>👟 Goleador</strong></td>${qs.map(q=>`<td>${e(q.goleador)||'—'}</td>`).join('')}</tr>
-  <tr class="cmp-grp"><td colspan="${qs.length+1}">TERCEROS CLASIFICADOS</td></tr>
-  ${Object.keys(GS).map(g=>`<tr><td style="padding-left:10px">3°Grp.${g}</td>${qs.map(q=>{const sel=q.thirds&&q.thirds.includes(g);const name=q.groups&&q.groups[g]?q.groups[g][2]:'?';const t=GS[g].teams.find(x=>x.n===name)||{f:'🏳'};const isR=real.thirds&&real.thirds.includes(g);return`<td style="${isR&&sel?'background:#f0fff4;font-weight:700':''}">${sel?`<span class="chip chip-3">${t.f}✓</span>${isR?'✅':''}`:''}</td>`;}).join('')}</tr>`).join('')}
-  ${Object.keys(GS).map(g=>`<tr class="cmp-grp"><td colspan="${qs.length+1}">GRUPO ${g}</td></tr>
-  ${[0,1,2].map(p=>`<tr><td style="padding-left:10px">${['🥇','🥈','🥉'][p]} ${p+1}°</td>
-  ${qs.map(q=>{const n=q.groups&&q.groups[g]?q.groups[g][p]:'?';const t=GS[g].teams.find(x=>x.n===n)||{f:'🏳'};
-  const isReal=real.groups&&real.groups[g]&&real.groups[g][p]===n;
-  return`<td style="${isReal?'background:#f0fff4;font-weight:700':''}">${t.f} ${e(n)}${isReal?' ✅':''}</td>`;}).join('')}</tr>`).join('')}`).join('')}
+  <thead><tr><th>Predicción</th><th style="background:#1a6b3c;color:#fff;min-width:90px">✅ Real</th>${qs.map(q=>`<th>${e(q.name)}</th>`).join('')}</tr></thead><tbody>
+  <tr><td><strong>🏆 Campeón</strong></td><td style="background:#f0fff4;font-weight:700">${rC?rC.f+' '+e(rC.n):'—'}</td>${qs.map(q=>{const c=q.picks&&q.picks['p104'];const ok=rC&&c&&rC.n===c.n;return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${c?c.f+' '+e(c.n):'—'}${ok?' ✅':''}</td>`;}).join('')}</tr>
+  <tr><td><strong>👟 Goleador</strong></td><td style="background:#f0fff4;font-weight:700">${e(rG)||'—'}</td>${qs.map(q=>{const ok=rG&&q.goleador&&rG.trim().toLowerCase()===q.goleador.trim().toLowerCase();return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${e(q.goleador)||'—'}${ok?' ✅':''}</td>`;}).join('')}</tr>
+  <tr class="cmp-grp"><td colspan="${nc}">TERCEROS CLASIFICADOS</td></tr>
+  ${Object.keys(GS).map(g=>{const isR=real.thirds&&real.thirds.includes(g);const rn=real.groups&&real.groups[g]&&real.groups[g][2];const rt=rn?GS[g].teams.find(x=>x.n===rn)||{f:'🏳'}:{f:''};
+  return`<tr><td style="padding-left:10px">3°Grp.${g}</td><td style="background:${isR?'#f0fff4':'#fff'};font-weight:${isR?700:400}">${isR?`<span class="chip chip-g">${rt.f}✓</span>`:''}</td>${qs.map(q=>{const sel=q.thirds&&q.thirds.includes(g);const name=q.groups&&q.groups[g]?q.groups[g][2]:'?';const t=GS[g].teams.find(x=>x.n===name)||{f:'🏳'};const ok=isR&&sel;return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${sel?`<span class="chip chip-3">${t.f}✓</span>${ok?' ✅':''}`:''}</td>`;}).join('')}</tr>`;}).join('')}
+  ${Object.keys(GS).map(g=>`<tr class="cmp-grp"><td colspan="${nc}">GRUPO ${g}</td></tr>
+  ${[0,1,2].map(p=>{const rn=real.groups&&real.groups[g]&&real.groups[g][p];const rt=rn?GS[g].teams.find(x=>x.n===rn)||{f:'🏳',n:rn}:{f:'',n:''};
+  return`<tr><td style="padding-left:10px">${['🥇','🥈','🥉'][p]} ${p+1}°</td><td style="background:${rn?'#f0fff4':'#fff'};font-weight:700">${rn?rt.f+' '+e(rn):'—'}</td>
+  ${qs.map(q=>{const n=q.groups&&q.groups[g]?q.groups[g][p]:'?';const t=GS[g].teams.find(x=>x.n===n)||{f:'🏳'};const ok=rn&&rn===n;
+  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${t.f} ${e(n)}${ok?' ✅':''}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
   </tbody></table></div>`;
   document.getElementById('main').innerHTML=h;
 }

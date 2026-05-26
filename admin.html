@@ -310,21 +310,23 @@ function load(){
       const supaReal=realRow&&realRow.data?{groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data}:null;
       const supTs=supaReal&&supaReal._ts||0;
       const locTs=real._ts||0;
-      const supaHas=supaReal&&((Object.keys(supaReal.groups||{}).length>0)||(Object.keys(supaReal.picks||{}).length>0));
-      const locHas=(Object.keys(real.groups||{}).length>0)||(Object.keys(real.picks||{}).length>0);
+      // Count data richness: groups + picks + thirds
+      function dataScore(r){return Object.keys(r&&r.groups||{}).length+Object.keys(r&&r.picks||{}).length+(r&&r.thirds||[]).length;}
+      const supScore=supaReal?dataScore(supaReal):0;
+      const locScore=dataScore(real);
       if(supTs>locTs){
-        // Supabase is newer (other device saved more recently) → use it
+        // Supabase explicitly newer → use it
         real=supaReal;
         localStorage.setItem('qm2026_real',JSON.stringify(real));
-      } else if(locTs>supTs){
-        // Local is newer → keep local, push to Supabase
+      } else if(locTs>supTs||locScore>supScore){
+        // Local is newer OR has more data (e.g. saves that didn't reach Supabase) → push up
         _flushSave();
-      } else {
-        // Same timestamp (both 0 = old data without _ts, or equal)
-        if(supaHas&&!locHas){real=supaReal;localStorage.setItem('qm2026_real',JSON.stringify(real));}
-        else if(locHas&&!supaHas){_flushSave();}
-        // Both have data → keep local (current device is authoritative)
+      } else if(supScore>locScore){
+        // Supabase has more data (other device, no local) → use it
+        real=supaReal;
+        localStorage.setItem('qm2026_real',JSON.stringify(real));
       }
+      // else: equal → keep local as-is
     }
     rows=data.filter(r=>r.name!=='__real__');
     qs=rows.map(r=>({...r.data,_id:r.id,_created:r.created_at}));

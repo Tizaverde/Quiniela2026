@@ -45,6 +45,7 @@ input[type=text]:focus,input[type=tel]:focus{border-color:#1a6b3c}
 .team-btn-row.ranked-2{background:#f0fff4}
 .team-btn-row.ranked-3{background:#fffbf0}
 .team-btn-row.ranked-4{background:#fff}
+.team-btn-row.ranked-4.auto-4{opacity:.55;cursor:default;pointer-events:none}
 .rank-badge{width:32px;height:44px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0;cursor:pointer}
 .rb-1{color:#fff;background:#1a6b3c}
 .rb-2{color:#fff;background:#276749}
@@ -369,7 +370,7 @@ function rName(){
 function rGroups(){
   const allDone=Object.keys(GS).every(g=>ST.groups[g].every(v=>v!==null));
   APP.innerHTML=`${nav()}
-  <div class="info-box">👆 Toca los equipos en orden de clasificación: 1°, 2°, 3°, 4°. Toca de nuevo para desmarcar. Debes ordenar los 4 equipos de cada grupo para continuar.</div>
+  <div class="info-box">👆 Toca los equipos en orden: 1°, 2°, 3°. El <strong>4° se asigna automáticamente</strong> con el equipo restante. Toca un equipo ya elegido para desmarcarlo.</div>
   <div class="groups-all">${Object.keys(GS).map(g=>groupCard(g)).join('')}</div>
   ${navRow(!allDone)}`;
 }
@@ -382,10 +383,13 @@ function groupCard(g){
     ${GS[g].teams.map(t=>{
       const pos=order.indexOf(t.n); // -1 if not ranked
       const ranked=pos>=0;
+      const isAuto=pos===3;
       const rankCls=ranked?`ranked-${pos+1}`:'';
+      const autoCls=isAuto?' auto-4':'';
       const badgeCls=ranked?`rb-${pos+1}`:'rb-empty';
       const badgeTxt=ranked?(pos+1)+'°':'·';
-      return`<div class="team-btn-row ${rankCls}" onclick="toggleRank('${g}','${e(t.n)}')">
+      const click=isAuto?'':` onclick="toggleRank('${g}','${e(t.n)}')"`;
+      return`<div class="team-btn-row ${rankCls}${autoCls}"${click}>
         <div class="rank-badge ${badgeCls}">${badgeTxt}</div>
         <div class="team-info">
           <span class="team-flag">${t.f}</span>
@@ -399,19 +403,26 @@ function groupCard(g){
 function toggleRank(g,teamName){
   const order=[...ST.groups[g]];
   const pos=order.indexOf(teamName);
+  if(pos===3)return; // 4th is auto-filled, ignore clicks
   if(pos>=0){
-    // Already ranked — remove it, shift others down
+    // Remove from manual slot; also clear auto-4th, then compact 0-2
     order[pos]=null;
-    // compact: move nulls to end
-    const filled=order.filter(Boolean);
-    while(filled.length<4)filled.push(null);
-    ST.groups[g]=filled;
+    const manual=order.slice(0,3).filter(Boolean);
+    while(manual.length<3)manual.push(null);
+    ST.groups[g]=[...manual,null];
   } else {
-    // Not ranked — add to next available slot
-    const nextSlot=order.indexOf(null);
-    if(nextSlot<0)return; // all slots full (shouldn't happen if UI correct)
+    // Add to next free slot in 0-2 (4th is never filled manually)
+    const nextSlot=order.slice(0,3).indexOf(null);
+    if(nextSlot<0)return;
     order[nextSlot]=teamName;
     ST.groups[g]=order;
+  }
+  // Auto-fill 4th when 0-2 are all set
+  const cur=ST.groups[g];
+  if(cur[0]&&cur[1]&&cur[2]&&!cur[3]){
+    const taken=new Set([cur[0],cur[1],cur[2]]);
+    const fourth=GS[g].teams.map(t=>t.n).find(n=>!taken.has(n));
+    if(fourth)ST.groups[g][3]=fourth;
   }
   // Re-render just this card
   const card=document.getElementById('gc-'+g);
@@ -420,9 +431,8 @@ function toggleRank(g,teamName){
     tmp.innerHTML=groupCard(g);
     card.replaceWith(tmp.firstChild);
   }
-  // Check if all done to enable/disable next button
+  // Enable/disable next button
   const allDone=Object.keys(GS).every(gg=>ST.groups[gg].every(v=>v!==null));
-  // Update the nav-row next button
   APP.querySelectorAll('.nav-row .btn-g').forEach(btn=>btn.disabled=!allDone);
 }
 

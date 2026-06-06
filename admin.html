@@ -139,7 +139,6 @@ tr:nth-child(even) td{background:#f7fafc}
 .cmp-table td{font-size:.75rem;padding:6px 10px}
 .cmp-grp td{background:#1a3a5c!important;color:#fff;font-weight:700;font-size:.7rem;letter-spacing:.04em;padding:5px 10px}
 @media(max-width:500px){.stats{grid-template-columns:repeat(2,1fr)}}
-.score-inp{width:42px;height:30px;text-align:center;border:1.5px solid #e2e8f0;border-radius:6px;font-size:.9rem;font-weight:700;padding:0 4px;font-family:inherit;outline:none;-moz-appearance:textfield;background:#fff;flex-shrink:0}.score-inp::-webkit-outer-spin-button,.score-inp::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.score-inp:focus{border-color:#1a6b3c}
 .tie-msg{font-size:.72rem;color:#c05621;background:#fffaf0;border:1px solid #fbd38d;border-radius:6px;padding:4px 10px;margin:4px 12px 8px;text-align:center}
 .match-sched{font-size:.58rem;color:rgba(255,255,255,.7);font-weight:400;font-style:normal;margin-left:4px}
 </style>
@@ -280,7 +279,7 @@ const SCHEDULE={
 };
 
 // REAL RESULTS STATE
-let real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
+let real={groups:{},thirds:[],picks:{},goleador:''};
 try{const rr=localStorage.getItem('qm2026_real');if(rr)real=JSON.parse(rr);}catch(e){}
 
 function _setSaveStatus(msg,color){
@@ -314,7 +313,6 @@ function saveReal(){
   _flushSave();
 }
 
-let _scoreTimer=null;
 // PARTICIPANTS
 let rows=[];
 let qs=[];
@@ -324,7 +322,7 @@ let selIdx=null;
 // ── SUPABASE ──
 function clearRealResults(){
   if(!confirm('¿Limpiar TODOS los resultados reales? Los puntajes se resetearán a 0.'))return;
-  real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
+  real={groups:{},thirds:[],picks:{},goleador:''};
   saveReal();
   alert('✅ Resultados reales limpiados.');
   render();
@@ -337,7 +335,7 @@ function load(){
     const realRow=data.find(r=>r.name==='__real__');
     if(_firstLoad){
       _firstLoad=false;
-      const supaReal=realRow&&realRow.data?{groups:{},thirds:[],picks:{},scores:{},goleador:'',...realRow.data}:null;
+      const supaReal=realRow&&realRow.data?{groups:{},thirds:[],picks:{},goleador:'',...realRow.data}:null;
       const supTs=supaReal&&supaReal._ts||0;
       const locTs=real._ts||0;
       // Count data richness: groups + picks + thirds
@@ -431,69 +429,55 @@ function getRealTeam(src){
 }
 
 // ── SCORING ──
-function mRes(id,R,q){
+function mRes(id,pts,R,q){
   const rw=(R.picks||{})[id],qw=(q.picks||{})[id];
-  if(!rw||!qw||rw.n!==qw.n)return 0;
-  const rs=((R.scores||{})[id])||{},qs=((q.scores||{})[id])||{};
-  const rh=rs.h,ra=rs.a,qh=qs.h,qa=qs.a;
-  if(rh===''||rh===undefined||ra===''||ra===undefined||qh===''||qh===undefined||qa===''||qa===undefined)return 3;
-  if(Number(rh)===Number(qh)&&Number(ra)===Number(qa))return 6;
-  if((Number(rh)-Number(ra))===(Number(qh)-Number(qa)))return 4;
-  return 3;
-}
-function mBono(id,bono,R,q){
-  const rw=(R.picks||{})[id],qw=(q.picks||{})[id];
-  if(!rw||!qw||rw.n!==qw.n)return 0;
-  const rs=((R.scores||{})[id])||{},qs=((q.scores||{})[id])||{};
-  const rh=rs.h,ra=rs.a,qh=qs.h,qa=qs.a;
-  if(rh===''||rh===undefined||ra===''||ra===undefined||qh===''||qh===undefined||qa===''||qa===undefined)return 0;
-  return(Number(rh)===Number(qh)&&Number(ra)===Number(qa))?bono:0;
+  return(rw&&qw&&rw.n===qw.n)?pts:0;
 }
 function scoreQ(q){
   const R=real||{groups:{},thirds:[],picks:{},goleador:''};
-  let r16q=0,r16b=0,r16e=0;
-  let qfq=0,qfb=0,qfe=0;
-  let cfq=0,cfb=0,cfe=0;
-  let sfq=0,sfb=0,sfe=0;
-  let tpq=0,tpb=0,tpe=0;
-  let fnq=0,fnb=0,fne=0;
+  let r16q=0,r16p=0,r16e=0;
+  let qfq=0,qfe=0;
+  let cfq=0,cfe=0;
+  let sfq=0,sfe=0;
+  let tpq=0,tpe=0;
+  let fnq=0,fne=0;
   let ter=0,sub=0,cam=0,gol=0;
 
-  // R16: group stage qualifiers
+  // R16: 4 pts classify, 2 pts exact position, 2 pts match winner
   const realQ16=new Set(),realQ16pos={};
   Object.keys(GS).forEach(g=>{const ord=R.groups&&R.groups[g];if(!ord)return;[0,1].forEach(p=>{if(ord[p]){realQ16.add(ord[p]);realQ16pos[ord[p]]={g,pos:p};}});});
   if(R.thirds)R.thirds.forEach(g=>{const ord=R.groups&&R.groups[g];if(ord&&ord[2]){realQ16.add(ord[2]);realQ16pos[ord[2]]={g,pos:2};}});
   const predQ16=new Set(),predQ16pos={};
   Object.keys(GS).forEach(g=>{const ord=q.groups&&q.groups[g];if(!ord)return;[0,1].forEach(p=>{if(ord[p]){predQ16.add(ord[p]);predQ16pos[ord[p]]={g,pos:p};}});});
   if(q.thirds)q.thirds.forEach(g=>{const ord=q.groups&&q.groups[g];if(ord&&ord[2]){predQ16.add(ord[2]);predQ16pos[ord[2]]={g,pos:2};}});
-  predQ16.forEach(t=>{if(realQ16.has(t)){r16q+=4;const rp=realQ16pos[t],pp=predQ16pos[t];if(rp&&pp&&rp.g===pp.g&&rp.pos===pp.pos)r16q+=2;}});
-  R16_IDS.forEach(id=>{r16b+=mBono(id,2,R,q);r16e+=mRes(id,R,q);});
+  predQ16.forEach(t=>{if(realQ16.has(t)){r16q+=4;const rp=realQ16pos[t],pp=predQ16pos[t];if(rp&&pp&&rp.g===pp.g&&rp.pos===pp.pos)r16p+=2;}});
+  R16_IDS.forEach(id=>{r16e+=mRes(id,2,R,q);});
 
-  // QF (8avos)
+  // QF (8avos): 4 pts classify, 2 pts match winner
   const realTQF={},predTQF={};
   R16_IDS.forEach(id=>{const w=R.picks&&R.picks[id];if(w)realTQF[w.n]=r16ToQF[id];});
   R16_IDS.forEach(id=>{const w=q.picks&&q.picks[id];if(w)predTQF[w.n]=r16ToQF[id];});
   const realQFset=new Set(Object.keys(realTQF)),predQFset=new Set(Object.keys(predTQF));
-  predQFset.forEach(t=>{if(realQFset.has(t)){qfq+=4;if(realTQF[t]&&predTQF[t]===realTQF[t])qfb+=1;}});
-  QF_IDS.forEach(id=>{qfb+=mBono(id,2,R,q);qfe+=mRes(id,R,q);});
+  predQFset.forEach(t=>{if(realQFset.has(t)){qfq+=4;}});
+  QF_IDS.forEach(id=>{qfe+=mRes(id,2,R,q);});
 
-  // CF (4tos)
+  // CF (4tos): 7 pts classify, 4 pts match winner
   const realTCF={},predTCF={};
   QF_IDS.forEach(id=>{const w=R.picks&&R.picks[id];if(w)realTCF[w.n]=qfToCF[id];});
   QF_IDS.forEach(id=>{const w=q.picks&&q.picks[id];if(w)predTCF[w.n]=qfToCF[id];});
   const realCFset=new Set(Object.keys(realTCF)),predCFset=new Set(Object.keys(predTCF));
-  predCFset.forEach(t=>{if(realCFset.has(t)){cfq+=7;if(realTCF[t]&&predTCF[t]===realTCF[t])cfb+=1;}});
-  CF_IDS.forEach(id=>{cfb+=mBono(id,2,R,q);cfe+=mRes(id,R,q);});
+  predCFset.forEach(t=>{if(realCFset.has(t)){cfq+=7;}});
+  CF_IDS.forEach(id=>{cfe+=mRes(id,4,R,q);});
 
-  // SF (Semis)
+  // SF (Semis): 10 pts classify, 5 pts match winner
   const realTSF={},predTSF={};
   CF_IDS.forEach(id=>{const w=R.picks&&R.picks[id];if(w)realTSF[w.n]=cfToSF[id];});
   CF_IDS.forEach(id=>{const w=q.picks&&q.picks[id];if(w)predTSF[w.n]=cfToSF[id];});
   const realSFset=new Set(Object.keys(realTSF)),predSFset=new Set(Object.keys(predTSF));
-  predSFset.forEach(t=>{if(realSFset.has(t)){sfq+=10;if(realTSF[t]&&predTSF[t]===realTSF[t])sfb+=1;}});
-  SF_IDS.forEach(id=>{sfb+=mBono(id,4,R,q);sfe+=mRes(id,R,q);});
+  predSFset.forEach(t=>{if(realSFset.has(t)){sfq+=10;}});
+  SF_IDS.forEach(id=>{sfe+=mRes(id,5,R,q);});
 
-  // 3rd/4th place (SF losers)
+  // 3rd/4th place: 8 pts classify, 6 pts match winner
   const rCF97=R.picks&&R.picks['cf_p97'],rCF98=R.picks&&R.picks['cf_p98'],rSF101=R.picks&&R.picks['sf_p101'];
   const rCF99=R.picks&&R.picks['cf_p99'],rCF100=R.picks&&R.picks['cf_p100'],rSF102=R.picks&&R.picks['sf_p102'];
   const realTP1=rSF101&&rCF97&&rCF98?(rSF101.n===rCF97.n?rCF98:rCF97):null;
@@ -502,21 +486,19 @@ function scoreQ(q){
   const pCF99=q.picks&&q.picks['cf_p99'],pCF100=q.picks&&q.picks['cf_p100'],pSF102=q.picks&&q.picks['sf_p102'];
   const predTP1=pSF101&&pCF97&&pCF98?(pSF101.n===pCF97.n?pCF98:pCF97):null;
   const predTP2=pSF102&&pCF99&&pCF100?(pSF102.n===pCF99.n?pCF100:pCF99):null;
-  if(predTP1&&realTP1&&predTP1.n===realTP1.n){tpq+=8;tpb+=1;}
+  if(predTP1&&realTP1&&predTP1.n===realTP1.n){tpq+=8;}
   else if(predTP1&&realTP2&&predTP1.n===realTP2.n){tpq+=8;}
-  if(predTP2&&realTP2&&predTP2.n===realTP2.n){tpq+=8;tpb+=1;}
+  if(predTP2&&realTP2&&predTP2.n===realTP2.n){tpq+=8;}
   else if(predTP2&&realTP1&&predTP2.n===realTP1.n){tpq+=8;}
-  tpb+=mBono('p103',4,R,q);
-  tpe+=mRes('p103',R,q);
+  tpe+=mRes('p103',6,R,q);
 
-  // Final
+  // Final: 15 pts per finalista, 10 pts match winner
   const realFN=new Set(),realFNS={};
   SF_IDS.forEach(id=>{const w=R.picks&&R.picks[id];if(w){realFN.add(w.n);realFNS[w.n]=id;}});
   const predFN=new Set(),predFNS={};
   SF_IDS.forEach(id=>{const w=q.picks&&q.picks[id];if(w){predFN.add(w.n);predFNS[w.n]=id;}});
-  predFN.forEach(t=>{if(realFN.has(t)){fnq+=15;if(realFNS[t]&&predFNS[t]===realFNS[t])fnb+=1;}});
-  fnb+=mBono('p104',10,R,q);
-  fne+=mRes('p104',R,q);
+  predFN.forEach(t=>{if(realFN.has(t)){fnq+=15;}});
+  fne+=mRes('p104',10,R,q);
 
   // Champion / Runner-up / 3rd place winner bonuses
   const realChamp=R.picks&&R.picks['p104'],predChamp=q.picks&&q.picks['p104'];
@@ -528,8 +510,8 @@ function scoreQ(q){
   if(realThird&&predThird&&realThird.n===predThird.n)ter=10;
 
   if(R.goleador&&q.goleador&&R.goleador.trim().toLowerCase()===q.goleador.trim().toLowerCase())gol=10;
-  const total=r16q+r16b+r16e+qfq+qfb+qfe+cfq+cfb+cfe+sfq+sfb+sfe+tpq+tpb+tpe+fnq+fnb+fne+ter+sub+cam+gol;
-  return{r16q,r16b,r16e,qfq,qfb,qfe,cfq,cfb,cfe,sfq,sfb,sfe,tpq,tpb,tpe,fnq,fnb,fne,ter,sub,cam,gol,total};
+  const total=r16q+r16p+r16e+qfq+qfe+cfq+cfe+sfq+sfe+tpq+tpe+fnq+fne+ter+sub+cam+gol;
+  return{r16q,r16p,r16e,qfq,qfe,cfq,cfe,sfq,sfe,tpq,tpe,fnq,fne,ter,sub,cam,gol,total};
 }
 
 function hasReal(){return real&&((real.picks&&Object.keys(real.picks).length>0)||(real.groups&&Object.keys(real.groups).length>0));}
@@ -602,13 +584,12 @@ function rOverview(){
 function rScores(){
   view='scores';
   const ptsKey=`<div class="pts-key">${[
-    {r:'Partidos',items:['6 pts · ganador + resultado exacto','4 pts · ganador + diferencia de goles','3 pts · ganador']},
-    {r:'16avos',items:['4 pts · equipo clasifica','2 pts · posición exacta','2 pts bono · exacto']},
-    {r:'8avos', items:['4 pts · equipo clasifica','1 pt · llave correcta','2 pts bono · exacto']},
-    {r:'4tos',  items:['7 pts · equipo clasifica','1 pt · llave correcta','2 pts bono · exacto']},
-    {r:'Semis', items:['10 pts · equipo clasifica','1 pt · llave correcta','4 pts bono · exacto']},
-    {r:'3°/4°', items:['8 pts · equipo clasifica','1 pt · llave correcta','4 pts bono · exacto']},
-    {r:'Final', items:['15 pts · finalista','1 pt · llave correcta','10 pts bono · exacto']},
+    {r:'16avos',items:['4 pts · equipo clasifica','2 pts · posición exacta en grupo','2 pts · ganador del partido']},
+    {r:'8avos', items:['4 pts · equipo clasifica','2 pts · ganador del partido']},
+    {r:'4tos',  items:['7 pts · equipo clasifica','4 pts · ganador del partido']},
+    {r:'Semis', items:['10 pts · equipo clasifica','5 pts · ganador del partido']},
+    {r:'3°/4°', items:['8 pts · equipo clasifica','6 pts · ganador del partido']},
+    {r:'Final', items:['15 pts · finalista','10 pts · ganador del partido']},
     {r:'Extras',items:['30 pts · campeón exacto','15 pts · subcampeón exacto','10 pts · 3er lugar exacto','10 pts · goleador exacto']},
   ].map(x=>`<div class="pts-key-card"><h4>${x.r}</h4><ul>${x.items.map(i=>`<li><b>✓</b>${i}</li>`).join('')}</ul></div>`).join('')}</div>`;
 
@@ -616,55 +597,28 @@ function rScores(){
     document.getElementById('main').innerHTML=tabs('scores')+`<div class="alert-info">ℹ️ Ve a <strong>✏️ Resultados reales</strong> para ingresar los resultados del torneo y calcular puntajes.</div><div class="card"><div class="card-hdr"><h2>📌 Sistema de puntos</h2></div><div class="card-body">${ptsKey}</div></div>`;return;
   }
   const sc=qs.map(q=>({...q,...scoreQ(q)})).sort((a,b)=>b.total-a.total);
-  function pts(a,b,c){const t=a+b+c;return t>0?`<span style="color:#1a6b3c;font-weight:700">${t}</span><br><small style="color:#a0aec0;font-size:.65rem">${a}+${b}+${c}</small>`:`<span class="pts-zero">0</span>`;}
+  function pts(a,b,c){const t=a+(b||0)+(c||0);return t>0?`<span style="color:#1a6b3c;font-weight:700">${t}</span><br><small style="color:#a0aec0;font-size:.65rem">${a}+${b||0}+${c||0}</small>`:`<span class="pts-zero">0</span>`;}
   let h=tabs('scores')+`<div class="card"><div class="card-hdr"><h2>📌 Sistema de puntos</h2></div><div class="card-body">${ptsKey}</div></div>
   <div class="card"><div class="card-hdr"><h2>🏅 Tabla de posiciones</h2></div><div class="card-body"><div style="overflow-x:auto"><table>
   <thead><tr><th>Pos.</th><th>Participante</th><th>16avos</th><th>8avos</th><th>4tos</th><th>Semis</th><th>3°/4°</th><th>Final</th><th>Extras</th><th style="background:#c8952a">TOTAL</th></tr></thead><tbody>
   ${sc.map((s,i)=>{const pc=i===0?'sp1':i===1?'sp2':i===2?'sp3':'spn';const ch=s.picks&&s.picks['p104'];
   return`<tr><td><span class="score-pos ${pc}" style="margin:auto">${i+1}</span></td>
   <td class="nl" onclick="selIdx=${qs.findIndex(x=>x.name===s.name)};view='detail';render()">${e(s.name)}<br><small style="color:#a0aec0;font-size:.7rem">${ch?ch.f+e(ch.n):''}</small></td>
-  <td class="pts-cell">${pts(s.r16q,s.r16b,s.r16e)}</td>
-  <td class="pts-cell">${pts(s.qfq,s.qfb,s.qfe)}</td>
-  <td class="pts-cell">${pts(s.cfq,s.cfb,s.cfe)}</td>
-  <td class="pts-cell">${pts(s.sfq,s.sfb,s.sfe)}</td>
-  <td class="pts-cell">${pts(s.tpq,s.tpb,s.tpe)}</td>
-  <td class="pts-cell">${pts(s.fnq,s.fnb,s.fne)}</td>
+  <td class="pts-cell">${pts(s.r16q,s.r16p,s.r16e)}</td>
+  <td class="pts-cell">${pts(s.qfq,0,s.qfe)}</td>
+  <td class="pts-cell">${pts(s.cfq,0,s.cfe)}</td>
+  <td class="pts-cell">${pts(s.sfq,0,s.sfe)}</td>
+  <td class="pts-cell">${pts(s.tpq,0,s.tpe)}</td>
+  <td class="pts-cell">${pts(s.fnq,0,s.fne)}</td>
   <td class="pts-cell">${(s.cam+s.sub+s.ter+s.gol)>0?`<span style="color:#c8952a;font-weight:700">${s.cam+s.sub+s.ter+s.gol}</span>`:`<span class="pts-zero">0</span>`}</td>
   <td class="pts-cell" style="font-size:1.1rem;color:#1a3a5c;font-weight:800">${s.total}</td></tr>`;}).join('')}
   </tbody></table></div></div></div>`;
   document.getElementById('main').innerHTML=h;
 }
 
-function updateScoreReal(id,side,val){
-  if(!real.scores)real.scores={};
-  if(!real.scores[id])real.scores[id]={h:'',a:''};
-  const n=parseInt(val);
-  real.scores[id][side]=isNaN(n)?'':n;
-  saveReal();
-  const sc=real.scores[id];
-  if(sc.h!==''&&sc.a!==''){
-    const hv=parseInt(sc.h),av=parseInt(sc.a);
-    if(hv>av)pickReal(id,'h');
-    else if(av>hv)pickReal(id,'a');
-    else rResults();
-  }
-}
-
-// ── RESULTS (same click-to-pick style as index) ──
-function saveScoreOnly(id,side,val){
-  if(!real.scores)real.scores={};
-  if(!real.scores[id])real.scores[id]={h:'',a:''};
-  const n=parseInt(val);
-  real.scores[id][side]=isNaN(n)?'':n;
-  localStorage.setItem('qm2026_real',JSON.stringify(real));
-  if(_scoreTimer)clearTimeout(_scoreTimer);
-  _scoreTimer=setTimeout(()=>{_scoreTimer=null;saveReal();},1000);
-}
-
 async function guardarResultados(){
   const btn=document.getElementById('btn-guardar');
   if(btn){btn.disabled=true;btn.textContent='Guardando…';}
-  if(_scoreTimer){clearTimeout(_scoreTimer);_scoreTimer=null;}
   real._ts=Date.now();
   localStorage.setItem('qm2026_real',JSON.stringify(real));
   const snap=JSON.parse(JSON.stringify(real));
@@ -727,21 +681,15 @@ function rResults(){
     const hw=w&&h2&&w.n===h2.n,aw=w&&a2&&w.n===a2.n;
     const ok=!!h2&&!!a2;
     const sc=SCHEDULE[m.id];
-    const sh=((real.scores||{})[m.id]||{}).h??'';
-    const sa=((real.scores||{})[m.id]||{}).a??'';
-    const isTie=sh!==''&&sa!==''&&parseInt(sh)===parseInt(sa);
     return`<div class="match-card${w?' done':''}" id="rmc-${m.id}">
     <div class="match-lbl">${m.num}<span>${m.hl} vs ${m.al}${sc?`<em class="match-sched"> · 📅 ${sc.d} ${sc.t} VET</em>`:''}</span></div>
     <div class="match-team${hw?' winner':''}${!h2?' pending':''}" onclick="${ok?`pickReal('${m.id}','h')`:''}">
       <span style="font-size:1rem">${h2?h2.f:'🏳'}</span><span class="mname" style="flex:1;font-size:.82rem;margin-left:8px">${h2?(e(h2.n)+(h2._from?` <small style="color:#718096">(${h2._from})</small>`:'')):'pendiente…'}</span><span class="win-icon">✓</span>
-      ${ok?`<input class="score-inp" type="number" min="0" max="99" value="${sh}" onclick="event.stopPropagation()" oninput="saveScoreOnly('${m.id}','h',this.value)" onchange="updateScoreReal('${m.id}','h',this.value)">`:''}
     </div>
     <div class="mdiv"></div>
     <div class="match-team${aw?' winner':''}${!a2?' pending':''}" onclick="${ok?`pickReal('${m.id}','a')`:''}">
       <span style="font-size:1rem">${a2?a2.f:'🏳'}</span><span class="mname" style="flex:1;font-size:.82rem;margin-left:8px">${a2?(e(a2.n)+(a2._from?` <small style="color:#718096">(${a2._from})</small>`:'')):'pendiente…'}</span><span class="win-icon">✓</span>
-      ${ok?`<input class="score-inp" type="number" min="0" max="99" value="${sa}" onclick="event.stopPropagation()" oninput="saveScoreOnly('${m.id}','a',this.value)" onchange="updateScoreReal('${m.id}','a',this.value)">`:''}
     </div>
-    ${ok&&isTie&&!w?`<div class="tie-msg">⚽ Empate — toca el equipo que pasa en penales</div>`:''}
     </div>`;
   }
 
@@ -839,8 +787,8 @@ function rDetail(idx){
   h+=`<div class="gol-box"><span style="font-size:1.3rem">👟</span><div><div style="font-size:.75rem;color:#2b6cb0;margin-bottom:2px">Goleador</div><strong>${e(q.goleador)||'—'}</strong>${sc.gol>0?` <span class="chip chip-g">+${sc.gol}pts</span>`:''}</div></div>`;
   if(hasReal()){
     h+=`<div class="card"><div class="card-hdr"><h2>🏅 Puntaje: ${sc.total} pts</h2></div><div class="card-body"><table>
-    <thead><tr><th>Ronda</th><th>Clasificados</th><th>Bono/Llave</th><th>Partidos</th><th>Sub</th></tr></thead><tbody>
-    ${[['16avos',sc.r16q,sc.r16b,sc.r16e],['8avos',sc.qfq,sc.qfb,sc.qfe],['4tos',sc.cfq,sc.cfb,sc.cfe],['Semis',sc.sfq,sc.sfb,sc.sfe],['3°/4°',sc.tpq,sc.tpb,sc.tpe],['Final',sc.fnq,sc.fnb,sc.fne]].map(([r,a,b,c])=>`<tr><td><strong>${r}</strong></td><td class="pts-cell">${a}</td><td class="pts-cell">${b}</td><td class="pts-cell">${c}</td><td class="pts-cell" style="font-weight:800">${a+b+c}</td></tr>`).join('')}
+    <thead><tr><th>Ronda</th><th>Clasificados</th><th>Llave</th><th>Pos.Exacta</th><th>Sub</th></tr></thead><tbody>
+    ${[['16avos',sc.r16q,sc.r16e,sc.r16p],['8avos',sc.qfq,sc.qfe,0],['4tos',sc.cfq,sc.cfe,0],['Semis',sc.sfq,sc.sfe,0],['3°/4°',sc.tpq,sc.tpe,0],['Final',sc.fnq,sc.fne,0]].map(([r,a,b,c])=>`<tr><td><strong>${r}</strong></td><td class="pts-cell">${a}</td><td class="pts-cell">${b}</td><td class="pts-cell">${c||'—'}</td><td class="pts-cell" style="font-weight:800">${a+b+(c||0)}</td></tr>`).join('')}
     <tr style="background:#fef9e7"><td><strong>Campeón</strong></td><td colspan="3"></td><td class="pts-cell" style="font-weight:800">${sc.cam}</td></tr>
     <tr><td><strong>Subcampeón</strong></td><td colspan="3"></td><td class="pts-cell" style="font-weight:800">${sc.sub}</td></tr>
     <tr style="background:#fef9e7"><td><strong>3er Lugar</strong></td><td colspan="3"></td><td class="pts-cell" style="font-weight:800">${sc.ter}</td></tr>

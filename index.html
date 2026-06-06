@@ -216,6 +216,7 @@ const STEP_LABELS=['Nombre','Fase de Grupos','Mejores Terceros','16avos','8avos'
 const STEPS=['name','groups','thirds','r16','qf','cf','sf','final','gol'];
 
 let ST={step:0,name:'',groups:{},thirds:[],picks:{},goleador:''};
+let _otroMode=false;
 Object.keys(GS).forEach(g=>{ST.groups[g]=[null,null,null,null];}); // null = unranked
 const APP=document.getElementById('app');
 
@@ -537,12 +538,12 @@ function rGol(){
         const sel=ST.goleador===s;
         return`<button class="scorer-btn${sel?' selected':''}" onclick="pickScorer('${e(s)}')">${e(s)}</button>`;
       }).join('')}
-      <button class="scorer-btn${ST.goleador&&!SCORERS.includes(ST.goleador)?' selected':''}" onclick="pickScorer('__otro__')">✏️ Otro jugador</button>
+      <button class="scorer-btn${(_otroMode||(ST.goleador&&!SCORERS.includes(ST.goleador)))?' selected':''}" onclick="pickScorer('__otro__')">✏️ Otro jugador</button>
     </div>
-    <div id="otro-input" style="display:${ST.goleador&&!SCORERS.includes(ST.goleador)?'block':'none'};margin-top:10px">
+    <div id="otro-input" style="display:${(_otroMode||(ST.goleador&&!SCORERS.includes(ST.goleador)))?'block':'none'};margin-top:10px">
       <input type="text" id="gi" placeholder="Escribe el nombre del goleador…"
-        value="${ST.goleador&&!SCORERS.includes(ST.goleador)?e(ST.goleador):''}"
-        oninput="ST.goleador=this.value.trim()">
+        value="${(_otroMode&&!SCORERS.includes(ST.goleador))?e(ST.goleador):''}"
+        oninput="ST.goleador=this.value.trim();const b=document.getElementById('btn-save');if(b)b.disabled=!ST.goleador">
     </div>
     ${ST.goleador?`<div style="margin-top:12px;padding:10px 14px;background:#f0fff4;border:1.5px solid #c6f6d5;border-radius:8px;font-size:.85rem;color:#276749;font-weight:600">✅ Seleccionado: ${e(ST.goleador)}</div>`:''}
   </div></div>
@@ -554,15 +555,12 @@ function rGol(){
 
 function pickScorer(n){
   if(n==='__otro__'){
-    // Toggle: if already in "otro" mode keep it, else clear and show input
-    if(ST.goleador&&!SCORERS.includes(ST.goleador)){
-      // already in otro mode, do nothing
-    } else {
-      ST.goleador='';
-    }
+    _otroMode=true;
+    if(SCORERS.includes(ST.goleador)) ST.goleador='';
     rGol();
     setTimeout(()=>{const gi=document.getElementById('gi');if(gi)gi.focus();},50);
   } else {
+    _otroMode=false;
     ST.goleador=n;
     rGol();
   }

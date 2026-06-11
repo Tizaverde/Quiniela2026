@@ -115,6 +115,7 @@ tr:nth-child(even) td{background:#f7fafc}
 .chip-g{background:#c6f6d5;color:#276749}
 .chip-w{background:#f0fff4;color:#1a6b3c;border:1px solid #c6f6d5}
 .chip-3{background:#fefcbf;color:#744210;border:1px solid #d69e2e}
+.chip-l{background:#f7fafc;color:#a0aec0;border:1px solid #e2e8f0;font-weight:500}
 
 /* PTS KEY */
 .pts-key{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-bottom:1rem}
@@ -789,10 +790,10 @@ function rCompare(){
   return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${t.f} ${e(n)}${ok?' ✅':''}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
   ${[{l:'16AVOS DE FINAL',defs:R16},{l:'8AVOS DE FINAL',defs:QF},{l:'4TOS DE FINAL',defs:CF},{l:'SEMIFINAL',defs:SF},{l:'3° Y 4° LUGAR',defs:[TP]},{l:'GRAN FINAL',defs:[FN]}].map(({l,defs})=>`
   <tr class="cmp-grp"><td colspan="${nc}">${l}</td></tr>
-  ${defs.map(m=>{const rw=real.picks&&real.picks[m.id];const rt=rw?{f:rw.f,n:rw.n}:null;
-  return`<tr><td style="padding-left:10px;font-size:.72rem">${m.num}</td><td style="background:${rt?'#f0fff4':'#fff'};font-weight:700">${rt?rt.f+' '+e(rt.n):'—'}</td>
-  ${[qA,qB].map(q=>{const w=q.picks&&q.picks[m.id];const ok=rw&&w&&rw.n===w.n;
-  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${w?w.f+' '+e(w.n):'—'}${ok?' ✅':''}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
+  ${defs.map(m=>{const rw=real.picks&&real.picks[m.id];const rt=rw?{f:rw.f,n:rw.n}:null;const rl=getLoser(m,real);
+  return`<tr><td style="padding-left:10px;font-size:.72rem">${m.num}</td><td style="background:${rt?'#f0fff4':'#fff'};font-weight:700">${fmtML(rt,rl)}</td>
+  ${[qA,qB].map(q=>{const w=q.picks&&q.picks[m.id];const ok=rw&&w&&rw.n===w.n;const l=getLoser(m,q);
+  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${fmtML(w,l)}${ok?' ✅':''}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
   </tbody></table></div>`;
   document.getElementById('main').innerHTML=h;
 }
@@ -832,10 +833,11 @@ function rDetail(idx){
   h+=`<div class="card"><div class="card-hdr"><h2>⚔️ Eliminatorias</h2></div><div class="card-body">`;
   allRounds.forEach(r=>{
     h+=`<div class="stitle"><span class="round-badge">${r.l}</span></div>`;
-    r.defs.forEach(m=>{const w=q.picks&&q.picks[m.id];const rw=real.picks&&real.picks[m.id];const ok=w&&rw&&w.n===rw.n;
+    r.defs.forEach(m=>{const w=q.picks&&q.picks[m.id];const rw=real.picks&&real.picks[m.id];const ok=w&&rw&&w.n===rw.n;const l=getLoser(m,q);
       h+=`<div class="drow"><span style="min-width:54px;font-size:.7rem;color:#a0aec0">${m.num}</span>
       ${w?`<span style="font-size:.9rem">${w.f}</span><span class="chip chip-w" style="margin-left:4px">${e(w.n)}</span>`:
       `<span style="color:#cbd5e0;font-size:.78rem;font-style:italic">sin elegir</span>`}
+      ${l?`<span class="chip chip-l" style="margin-left:4px">${l.f} ${e(l.n)}</span>`:''}
       ${ok?`<span class="chip chip-g" style="margin-left:auto">✅</span>`:rw&&w?`<span style="margin-left:auto;font-size:.7rem;color:#a0aec0">${rw.f}${e(rw.n)}</span>`:''}</div>`;
     });
   });
@@ -847,6 +849,56 @@ function rDetail(idx){
 async function del(id,idx){if(!confirm('¿Eliminar quiniela de "'+qs[idx].name+'"?'))return;try{await supaDelete(id);load();}catch(ex){alert('Error: '+ex.message);}}
 function gTn(n){for(const g of Object.values(GS)){const t=g.teams.find(x=>x.n===n);if(t)return t;}return null;}
 function e(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── BRACKET RESOLUTION (winner/loser of each crossing) ──
+const ALL_MATCHES=[...R16,...QF,...CF,...SF,TP,FN];
+function resolveTeam(src,q){
+  if(!q)return null;
+  if(src.t==='g'){
+    const n=q.groups&&q.groups[src.g]?q.groups[src.g][src.p]:null;
+    if(!n)return null;
+    const t=GS[src.g].teams.find(x=>x.n===n);
+    return t?{n:t.n,f:t.f}:{n,f:'🏳'};
+  }
+  if(src.t==='3rd'){
+    if(!q.thirds||q.thirds.length!==8)return null;
+    const key=[...q.thirds].sort().join('');
+    const entry=TT[key];
+    if(!entry)return null;
+    const code=entry.split(',')[src.slot];
+    if(!code)return null;
+    const g=code[1];
+    const n=q.groups&&q.groups[g]?q.groups[g][2]:null;
+    if(!n)return null;
+    const t=GS[g].teams.find(x=>x.n===n);
+    return t?{n:t.n,f:t.f}:{n,f:'🏳'};
+  }
+  if(src.t==='w'){
+    const w=q.picks&&q.picks[src.m];
+    return w?{n:w.n,f:w.f}:null;
+  }
+  if(src.t==='l'){
+    const m=ALL_MATCHES.find(x=>x.id===src.m);
+    if(!m)return null;
+    const w=q.picks&&q.picks[src.m];
+    if(!w)return null;
+    const h=resolveTeam(m.hs,q),a=resolveTeam(m.as,q);
+    if(!h||!a)return null;
+    return h.n===w.n?a:h;
+  }
+  return null;
+}
+function getLoser(m,q){
+  const w=q.picks&&q.picks[m.id];
+  if(!w)return null;
+  const h=resolveTeam(m.hs,q),a=resolveTeam(m.as,q);
+  if(!h||!a)return null;
+  return h.n===w.n?a:h;
+}
+function fmtML(w,l){
+  if(!w)return'—';
+  return`${w.f} ${e(w.n)}${l?` <span class="chip chip-l">vs ${l.f} ${e(l.n)}</span>`:''}`;
+}
 
 load();
 setInterval(load,30000);

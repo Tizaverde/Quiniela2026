@@ -182,6 +182,7 @@ const H={'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'ap
 async function supaGet(){const r=await fetch(`${SUPA_URL}/rest/v1/quinelas?select=*&order=created_at.asc`,{headers:H});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function supaDelete(id){const r=await fetch(`${SUPA_URL}/rest/v1/quinelas?id=eq.${id}`,{method:'DELETE',headers:H});if(!r.ok)throw new Error(await r.text());}
 async function supaInsert(name,data){const r=await fetch(`${SUPA_URL}/rest/v1/quinelas`,{method:'POST',headers:{...H,'Prefer':'return=minimal'},body:JSON.stringify({name,data})});if(!r.ok)throw new Error(await r.text());}
+async function supaUpdate(id,patch){const r=await fetch(`${SUPA_URL}/rest/v1/quinelas?id=eq.${id}`,{method:'PATCH',headers:{...H,'Prefer':'return=minimal'},body:JSON.stringify(patch)});if(!r.ok)throw new Error(await r.text());}
 async function supaUpsertReal(data){
   let lastErr;
   for(let attempt=0;attempt<=2;attempt++){
@@ -802,7 +803,7 @@ function rCompare(){
 function rDetail(idx){
   view='detail';selIdx=idx;
   const q=qs[idx];const ch=q.picks&&q.picks['p104'];const sc=scoreQ(q);
-  let h=`<div class="tabs"><button class="tab" onclick="view='overview';render()">← Volver</button><button class="tab active">👤 ${e(q.name)}</button></div>`;
+  let h=`<div class="tabs"><button class="tab" onclick="view='overview';render()">← Volver</button><button class="tab active">👤 ${e(q.name)}</button><button class="btn btn-o" style="font-size:.72rem;padding:5px 10px" onclick="editName(${idx})">✏️ Editar nombre</button></div>`;
   if(ch)h+=`<div class="cbox"><div class="emo">🏆</div><h3>Campeón pronosticado</h3><div class="team">${ch.f} ${e(ch.n)}</div></div>`;
   h+=`<div class="gol-box"><span style="font-size:1.3rem">👟</span><div><div style="font-size:.75rem;color:#2b6cb0;margin-bottom:2px">Goleador</div><strong>${e(q.goleador)||'—'}</strong>${sc.gol>0?` <span class="chip chip-g">+${sc.gol}pts</span>`:''}</div></div>`;
   if(hasReal()){
@@ -847,6 +848,16 @@ function rDetail(idx){
 
 // ── UTILS ──
 async function del(id,idx){if(!confirm('¿Eliminar quiniela de "'+qs[idx].name+'"?'))return;try{await supaDelete(id);load();}catch(ex){alert('Error: '+ex.message);}}
+async function editName(idx){
+  const q=qs[idx];
+  const newName=prompt('Nuevo nombre para esta quiniela:',q.name);
+  if(newName===null)return;
+  const trimmed=newName.trim();
+  if(!trimmed||trimmed===q.name)return;
+  const{_id,_created,...data}=q;
+  data.name=trimmed;
+  try{await supaUpdate(_id,{name:trimmed,data});load();}catch(ex){alert('Error: '+ex.message);}
+}
 function gTn(n){for(const g of Object.values(GS)){const t=g.teams.find(x=>x.n===n);if(t)return t;}return null;}
 function e(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 

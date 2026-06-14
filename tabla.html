@@ -123,6 +123,10 @@ tr:nth-child(even) td{background:#f7fafc}
 .pts-key-card h4{font-weight:700;color:#1a3a5c;margin-bottom:6px;font-size:.8rem}
 .pts-key-card li{list-style:none;padding:2px 0;color:#4a5568;display:flex;justify-content:space-between;gap:8px}
 .pts-key-card li b{color:#1a6b3c}
+.pts-toggle summary{cursor:pointer;list-style:none}
+.pts-toggle summary::-webkit-details-marker{display:none}
+.pts-toggle summary .arrow{margin-left:auto;font-size:.7rem;color:#a0aec0;transition:transform .2s}
+.pts-toggle[open] summary .arrow{transform:rotate(180deg)}
 
 .empty{text-align:center;padding:3rem;color:#a0aec0;font-size:.9rem;line-height:2}
 .top-bar{display:flex;gap:8px;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap}
@@ -247,7 +251,7 @@ const SCHEDULE={
 };
 
 let real={groups:{},thirds:[],picks:{},scores:{},goleador:''};
-let rows=[],qs=[],view='overview',selIdx=0,cmpA=null,cmpB=null;
+let rows=[],qs=[],view='overview',selIdx=0,cmpA=null,cmpB=null,showPtsKey=false;
 
 function load(){
   document.getElementById('upd').textContent='Actualizando…';
@@ -427,13 +431,14 @@ function rScores(){
     {r:'Final', items:['15 pts · finalista','10 pts · llave correcta']},
     {r:'Extras',items:['30 pts · campeón','15 pts · subcampeón','10 pts · 3er lugar','10 pts · goleador']},
   ].map(x=>`<div class="pts-key-card"><h4>${x.r}</h4><ul>${x.items.map(i=>`<li><b>✓</b>${i}</li>`).join('')}</ul></div>`).join('')}</div>`;
+  const ptsCard=`<details class="card pts-toggle"${showPtsKey?' open':''} ontoggle="showPtsKey=this.open"><summary class="card-hdr"><h2>📌 Sistema de puntos</h2><span class="arrow">▼</span></summary><div class="card-body">${ptsKey}</div></details>`;
 
   if(!hasReal()){
-    document.getElementById('main').innerHTML=tabs('scores')+`<div class="alert-info">ℹ️ Los resultados reales aún no han sido cargados. Los puntajes se calcularán conforme avance el torneo.</div><div class="card"><div class="card-hdr"><h2>📌 Sistema de puntos</h2></div><div class="card-body">${ptsKey}</div></div>`;return;
+    document.getElementById('main').innerHTML=tabs('scores')+`<div class="alert-info">ℹ️ Los resultados reales aún no han sido cargados. Los puntajes se calcularán conforme avance el torneo.</div>${ptsCard}`;return;
   }
   const sc=qs.map(q=>({...q,...scoreQ(q)})).sort((a,b)=>b.total-a.total);
   function pts(a,b,c){const t=a+b+c;return t>0?`<span style="color:#1a6b3c;font-weight:700">${t}</span><br><small style="color:#a0aec0;font-size:.65rem">${a}+${b}+${c}</small>`:`<span class="pts-zero">0</span>`;}
-  let h=tabs('scores')+`<div class="card"><div class="card-hdr"><h2>📌 Sistema de puntos</h2></div><div class="card-body">${ptsKey}</div></div>
+  let h=tabs('scores')+ptsCard+`
   <div class="card"><div class="card-hdr"><h2>🏅 Tabla de posiciones</h2></div><div class="card-body"><div style="overflow-x:auto"><table>
   <thead><tr><th>Pos.</th><th>Participante</th><th>16avos</th><th>8avos</th><th>4tos</th><th>Semis</th><th>3°/4°</th><th>Final</th><th>Extras</th><th style="background:#c8952a">TOTAL</th></tr></thead><tbody>
   ${sc.map((s,i)=>{const pc=i===0?'sp1':i===1?'sp2':i===2?'sp3':'spn';const ch=s.picks&&s.picks['p104'];
@@ -455,8 +460,13 @@ function rScores(){
 function rCompare(){
   view='compare';
   if(qs.length===0){rOverview();return;}
-  if(cmpA===null||cmpA>=qs.length)cmpA=0;
-  if(cmpB===null||cmpB>=qs.length)cmpB=qs.length>1?1:0;
+  if(cmpA===null||cmpB===null){
+    const rank=qs.map((q,i)=>({i,total:scoreQ(q).total})).sort((a,b)=>b.total-a.total);
+    if(cmpA===null)cmpA=rank[0]?rank[0].i:0;
+    if(cmpB===null)cmpB=rank[1]?rank[1].i:(qs.length>1?1:0);
+  }
+  if(cmpA>=qs.length)cmpA=0;
+  if(cmpB>=qs.length)cmpB=qs.length>1?1:0;
   const qA=qs[cmpA],qB=qs[cmpB];
   const rC=real.picks&&real.picks['p104'];
   const rG=real.goleador;

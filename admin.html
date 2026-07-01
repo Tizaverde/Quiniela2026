@@ -839,7 +839,8 @@ function rCompare(){
   const qh=resolveTeam(m.hs,q),qa=resolveTeam(m.as,q);const matchOk=!!ht&&!!at&&!!qh&&!!qa&&ht.n===qh.n&&at.n===qa.n;
   const pts=matchOk&&loserOk&&m.id==='p104'?pBadge(`${mpts}+15`):matchOk?pBadge(mpts):loserOk&&m.id==='p104'?pBadge(15):'';
   let gBdgQ='',gBdgP='';if(lbl==='16AVOS DE FINAL'){const pp=qi===0?pQ16posA:pQ16posB;let gpQ=0,gpP=0;[m.hs,m.as].forEach(sl=>{const tn=resolveTeam(sl,q);if(tn&&realQ16.has(tn.n)){gpQ+=4;const rp=realQ16pos[tn.n],predP=pp[tn.n];if(rp&&predP&&rp.g===predP.g&&rp.pos===predP.pos)gpP+=2;}});if(gpQ>0)gBdgQ=pBadge(gpQ);if(gpP>0)gBdgP=pBadge(gpP);}
-  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${fmtML(w,ql)}${ok?' ✅':''}${gBdgQ}${gBdgP}${pts}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
+  let clBdg='';if(lbl!=='16AVOS DE FINAL'){const cp=lbl==='8AVOS DE FINAL'?4:lbl==='4TOS DE FINAL'?7:lbl==='SEMIFINAL'?10:lbl==='3° Y 4° LUGAR'?8:15;let cl=0;if(ht&&qh&&ht.n===qh.n)cl+=cp;if(at&&qa&&at.n===qa.n)cl+=cp;if(cl>0)clBdg=pBadge(cl);}
+  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${fmtML(w,ql)}${ok?' ✅':''}${gBdgQ}${gBdgP}${clBdg}${pts}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
   </tbody></table></div>`;
   document.getElementById('main').innerHTML=h;
 }

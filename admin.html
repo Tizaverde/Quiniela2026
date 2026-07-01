@@ -792,6 +792,8 @@ function rCompare(){
   const realQ16=new Set(),realQ16pos={};
   Object.keys(GS).forEach(g=>{const ord=real.groups&&real.groups[g];if(!ord)return;[0,1].forEach(p=>{if(ord[p]){realQ16.add(ord[p]);realQ16pos[ord[p]]={g,pos:p};}});});
   if(real.thirds)real.thirds.forEach(g=>{const ord=real.groups&&real.groups[g];if(ord&&ord[2]){realQ16.add(ord[2]);realQ16pos[ord[2]]={g,pos:2};}});
+  const getQ16pos=q=>{const pp={};Object.keys(GS).forEach(g=>{const ord=q.groups&&q.groups[g];if(!ord)return;[0,1].forEach(p=>{if(ord[p])pp[ord[p]]={g,pos:p};});});if(q.thirds)q.thirds.forEach(g=>{const ord=q.groups&&q.groups[g];if(ord&&ord[2])pp[ord[2]]={g,pos:2};});return pp;};
+  const pQ16posA=getQ16pos(qA),pQ16posB=getQ16pos(qB);
 
   function pBadge(n){return`<span style="font-size:.6rem;color:#1a6b3c;font-weight:700;margin-left:3px">+${n}</span>`;}
   function grpPts(q,g,p){
@@ -827,9 +829,10 @@ function rCompare(){
   const ht=getRealTeam(m.hs),at=getRealTeam(m.as);const slotLbl=s=>s.t==='g'?`${s.p+1}°${s.g}`:s.t==='3rd'?'3°cl.':s.t==='w'?`G.${s.m}`:s.t==='l'?`L.${s.m}`:'?';
   const realCell=rt?`<span style="font-weight:700">${rt.f} ${e(rt.n)}</span> <span class="adv-chip">${nxt}</span>`+(rl?`<br><span class="adv-elim">${rl.f} ${e(rl.n)} <span class="adv-chip-out">${eli}</span></span>`:''):`<span style="color:#4a5568;font-size:.75rem">${ht?ht.f+' '+e(ht.n):slotLbl(m.hs)} vs ${at?at.f+' '+e(at.n):slotLbl(m.as)}</span>`;
   return`<tr><td style="padding-left:10px;font-size:.72rem">${m.num}</td><td style="background:${rt?'#f0fff4':'#fff'};font-weight:700">${realCell}</td>
-  ${[qA,qB].map(q=>{const w=q.picks&&q.picks[m.id];const ok=rw&&w&&rw.n===w.n;const ql=getLoser(m,q);const loserOk=rl&&ql&&rl.n===ql.n;
+  ${[qA,qB].map((q,qi)=>{const w=q.picks&&q.picks[m.id];const ok=rw&&w&&rw.n===w.n;const ql=getLoser(m,q);const loserOk=rl&&ql&&rl.n===ql.n;
   const pts=ok&&loserOk&&m.id==='p104'?pBadge(`${mpts}+15`):ok?pBadge(mpts):loserOk&&m.id==='p104'?pBadge(15):'';
-  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${fmtML(w,ql)}${ok?' ✅':''}${pts}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
+  let gBdg='';if(lbl==='16AVOS DE FINAL'){const pp=qi===0?pQ16posA:pQ16posB;let gp=0;[m.hs,m.as].forEach(sl=>{const tn=resolveTeam(sl,q);if(tn&&realQ16.has(tn.n)){gp+=4;const rp=realQ16pos[tn.n],predP=pp[tn.n];if(rp&&predP&&rp.g===predP.g&&rp.pos===predP.pos)gp+=2;}});if(gp>0)gBdg=pBadge(gp);}
+  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${fmtML(w,ql)}${ok?' ✅':''}${gBdg}${pts}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
   </tbody></table></div>`;
   document.getElementById('main').innerHTML=h;
 }

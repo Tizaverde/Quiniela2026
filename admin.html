@@ -146,6 +146,9 @@ tr:nth-child(even) td{background:#f7fafc}
 .cmp-selectors{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
 .cmp-selectors label{font-size:.72rem;color:#718096;font-weight:600;display:block;margin-bottom:3px}
 .cmp-selectors select{padding:7px 10px;border-radius:8px;border:1.5px solid #e2e8f0;font-family:inherit;font-size:.82rem;background:#fff;min-width:160px;color:#2d3748}
+.adv-chip{display:inline-block;background:#d1fae5;color:#065f46;border-radius:3px;padding:1px 5px;font-size:.6rem;font-weight:700;margin-left:3px;vertical-align:middle}
+.adv-chip-out{display:inline-block;background:#f3f4f6;color:#9ca3af;border-radius:3px;padding:1px 5px;font-size:.6rem;font-weight:600;margin-left:3px;vertical-align:middle}
+.adv-elim{color:#9ca3af;font-size:.75rem}
 @media(max-width:500px){.stats{grid-template-columns:repeat(2,1fr)}}
 .tie-msg{font-size:.72rem;color:#c05621;background:#fffaf0;border:1px solid #fbd38d;border-radius:6px;padding:4px 10px;margin:4px 12px 8px;text-align:center}
 .match-sched{font-size:.58rem;color:rgba(255,255,255,.7);font-weight:400;font-style:normal;margin-left:4px}
@@ -813,13 +816,15 @@ function rCompare(){
   return`<tr><td style="padding-left:10px">3°Grp.${g}</td><td style="background:${isR?'#f0fff4':'#fff'};font-weight:${isR?700:400}">${isR?`<span class="chip chip-g">${rt.f}✓</span>`:''}</td>${[qA,qB].map(q=>{const sel=q.thirds&&q.thirds.includes(g);const name=q.groups&&q.groups[g]?q.groups[g][2]:'?';const t=GS[g].teams.find(x=>x.n===name)||{f:'🏳'};const ok=isR&&sel;return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${sel?`<span class="chip chip-3">${t.f}✓</span>${ok?' ✅':''}${ok?pBadge(4):''}`:''}</td>`;}).join('')}</tr>`;}).join('')}
   ${Object.keys(GS).map(g=>`<tr class="cmp-grp"><td colspan="${nc}">GRUPO ${g}</td></tr>
   ${[0,1,2].map(p=>{const rn=real.groups&&real.groups[g]&&real.groups[g][p];const rt=rn?GS[g].teams.find(x=>x.n===rn)||{f:'🏳',n:rn}:{f:'',n:''};
-  return`<tr><td style="padding-left:10px">${['🥇','🥈','🥉'][p]} ${p+1}°</td><td style="background:${rn?'#f0fff4':'#fff'};font-weight:700">${rn?rt.f+' '+e(rn):'—'}</td>
+  const r16adv=rn&&(p<2||(real.thirds&&real.thirds.includes(g)));
+  return`<tr><td style="padding-left:10px">${['🥇','🥈','🥉'][p]} ${p+1}°</td><td style="background:${rn?'#f0fff4':'#fff'};font-weight:700">${rn?rt.f+' '+e(rn)+(r16adv?` <span class="adv-chip">→ R16</span>`:''):'—'}</td>
   ${[qA,qB].map(q=>{const n=q.groups&&q.groups[g]?q.groups[g][p]:'?';const t=GS[g].teams.find(x=>x.n===n)||{f:'🏳'};const ok=rn&&rn===n;
   return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${t.f} ${e(n)}${ok?' ✅':''}${grpPts(q,g,p)}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
-  ${[{lbl:'16AVOS DE FINAL',defs:R16,mpts:2},{lbl:'8AVOS DE FINAL',defs:QF,mpts:2},{lbl:'4TOS DE FINAL',defs:CF,mpts:4},{lbl:'SEMIFINAL',defs:SF,mpts:5},{lbl:'3° Y 4° LUGAR',defs:[TP],mpts:6},{lbl:'GRAN FINAL',defs:[FN],mpts:10}].map(({lbl,defs,mpts})=>`
+  ${[{lbl:'16AVOS DE FINAL',defs:R16,mpts:2,nxt:'→ 8avos',eli:'Eliminado'},{lbl:'8AVOS DE FINAL',defs:QF,mpts:2,nxt:'→ 4tos',eli:'Eliminado'},{lbl:'4TOS DE FINAL',defs:CF,mpts:4,nxt:'→ Semis',eli:'Eliminado'},{lbl:'SEMIFINAL',defs:SF,mpts:5,nxt:'→ Final',eli:'→ 3°/4°'},{lbl:'3° Y 4° LUGAR',defs:[TP],mpts:6,nxt:'🥉 3er Lugar',eli:'4° Lugar'},{lbl:'GRAN FINAL',defs:[FN],mpts:10,nxt:'🏆 Campeón',eli:'🥈 Subcampeón'}].map(({lbl,defs,mpts,nxt,eli})=>`
   <tr class="cmp-grp"><td colspan="${nc}">${lbl}</td></tr>
   ${defs.map(m=>{const rw=real.picks&&real.picks[m.id];const rt=rw?{f:rw.f,n:rw.n}:null;const rl=getLoser(m,real);
-  return`<tr><td style="padding-left:10px;font-size:.72rem">${m.num}</td><td style="background:${rt?'#f0fff4':'#fff'};font-weight:700">${fmtML(rt,rl)}</td>
+  const realCell=rt?`<span style="font-weight:700">${rt.f} ${e(rt.n)}</span> <span class="adv-chip">${nxt}</span>`+(rl?`<br><span class="adv-elim">${rl.f} ${e(rl.n)} <span class="adv-chip-out">${eli}</span></span>`:''): '—';
+  return`<tr><td style="padding-left:10px;font-size:.72rem">${m.num}</td><td style="background:${rt?'#f0fff4':'#fff'};font-weight:700">${realCell}</td>
   ${[qA,qB].map(q=>{const w=q.picks&&q.picks[m.id];const ok=rw&&w&&rw.n===w.n;const ql=getLoser(m,q);const loserOk=rl&&ql&&rl.n===ql.n;
   const pts=ok&&loserOk&&m.id==='p104'?pBadge(`${mpts}+15`):ok?pBadge(mpts):loserOk&&m.id==='p104'?pBadge(15):'';
   return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${fmtML(w,ql)}${ok?' ✅':''}${pts}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}

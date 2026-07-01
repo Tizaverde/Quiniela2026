@@ -598,13 +598,13 @@ function rOverview(){
 function rScores(){
   view='scores';
   const ptsKey=`<div class="pts-key">${[
-    {r:'16avos',items:['4 pts · equipo clasifica','2 pts · posición exacta en grupo','2 pts · ganador del partido']},
-    {r:'8avos', items:['4 pts · equipo clasifica','2 pts · ganador del partido']},
-    {r:'4tos',  items:['7 pts · equipo clasifica','4 pts · ganador del partido']},
-    {r:'Semis', items:['10 pts · equipo clasifica','5 pts · ganador del partido']},
-    {r:'3°/4°', items:['8 pts · equipo clasifica','6 pts · ganador del partido']},
-    {r:'Final', items:['15 pts · finalista','10 pts · ganador del partido']},
-    {r:'Extras',items:['30 pts · campeón exacto','15 pts · subcampeón exacto','10 pts · 3er lugar exacto','10 pts · goleador exacto']},
+    {r:'16avos',items:['4 pts · equipo clasifica a 16avos','2 pts · posición exacta (1°/2°/3°)','2 pts · si aciertas el partido correcto']},
+    {r:'8avos', items:['4 pts · equipo clasifica a 8avos','2 pts · si aciertas el partido correcto']},
+    {r:'4tos',  items:['7 pts · equipo clasifica a 4tos','4 pts · si aciertas el partido correcto']},
+    {r:'Semis', items:['10 pts · equipo clasifica a Semis','5 pts · si aciertas el partido correcto']},
+    {r:'3°/4°', items:['8 pts · equipo en 3°/4°','6 pts · si aciertas el partido','10 pts · 3er lugar exacto']},
+    {r:'Final', items:['15 pts · equipo en la final','10 pts · partido correcto']},
+    {r:'Extras',items:['30 pts · campeón','15 pts · subcampeón','10 pts · goleador']},
   ].map(x=>`<div class="pts-key-card"><h4>${x.r}</h4><ul>${x.items.map(i=>`<li><b>✓</b>${i}</li>`).join('')}</ul></div>`).join('')}</div>`;
   const ptsCard=`<details class="card pts-toggle"${showPtsKey?' open':''} ontoggle="showPtsKey=this.open"><summary class="card-hdr"><h2>📌 Sistema de puntos</h2><span class="arrow">▼</span></summary><div class="card-body">${ptsKey}</div></details>`;
 

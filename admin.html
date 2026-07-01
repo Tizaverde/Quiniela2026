@@ -783,6 +783,22 @@ function rCompare(){
   const rG=real.goleador;
   const nc=4;
   const opts=sel=>qs.map((q,i)=>`<option value="${i}"${i===sel?' selected':''}>${e(q.name)}</option>`).join('');
+
+  // Build real R16 qualifier set for group-stage point badges
+  const realQ16=new Set(),realQ16pos={};
+  Object.keys(GS).forEach(g=>{const ord=real.groups&&real.groups[g];if(!ord)return;[0,1].forEach(p=>{if(ord[p]){realQ16.add(ord[p]);realQ16pos[ord[p]]={g,pos:p};}});});
+  if(real.thirds)real.thirds.forEach(g=>{const ord=real.groups&&real.groups[g];if(ord&&ord[2]){realQ16.add(ord[2]);realQ16pos[ord[2]]={g,pos:2};}});
+
+  function pBadge(n){return`<span style="font-size:.6rem;color:#1a6b3c;font-weight:700;margin-left:3px">+${n}</span>`;}
+  function grpPts(q,g,p){
+    const n=q.groups&&q.groups[g]?q.groups[g][p]:null;
+    if(!n)return '';
+    if(p===2&&!(q.thirds&&q.thirds.includes(g)))return '';
+    if(!realQ16.has(n))return '';
+    const exact=realQ16pos[n]&&realQ16pos[n].g===g&&realQ16pos[n].pos===p;
+    return pBadge(exact?'4+2':4);
+  }
+
   let h=tabs('compare')+`
   <div class="cmp-selectors">
     <div><label>Quiniela 1</label><select onchange="cmpA=parseInt(this.value);render()">${opts(cmpA)}</select></div>
@@ -790,22 +806,23 @@ function rCompare(){
   </div>
   <div class="cmp-wrap"><table class="cmp-table">
   <thead><tr><th>Predicción</th><th style="background:#1a6b3c;color:#fff;min-width:90px">✅ Real</th><th>${e(qA.name)}</th><th>${e(qB.name)}</th></tr></thead><tbody>
-  <tr><td><strong>🏆 Campeón</strong></td><td style="background:#f0fff4;font-weight:700">${rC?rC.f+' '+e(rC.n):'—'}</td>${[qA,qB].map(q=>{const c=q.picks&&q.picks['p104'];const ok=rC&&c&&rC.n===c.n;return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${c?c.f+' '+e(c.n):'—'}${ok?' ✅':''}</td>`;}).join('')}</tr>
-  <tr><td><strong>👟 Goleador</strong></td><td style="background:#f0fff4;font-weight:700">${e(rG)||'—'}</td>${[qA,qB].map(q=>{const ok=rG&&q.goleador&&rG.trim().toLowerCase()===q.goleador.trim().toLowerCase();return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${e(q.goleador)||'—'}${ok?' ✅':''}</td>`;}).join('')}</tr>
+  <tr><td><strong>🏆 Campeón</strong></td><td style="background:#f0fff4;font-weight:700">${rC?rC.f+' '+e(rC.n):'—'}</td>${[qA,qB].map(q=>{const c=q.picks&&q.picks['p104'];const ok=rC&&c&&rC.n===c.n;return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${c?c.f+' '+e(c.n):'—'}${ok?' ✅':''}${ok?pBadge(30):''}</td>`;}).join('')}</tr>
+  <tr><td><strong>👟 Goleador</strong></td><td style="background:#f0fff4;font-weight:700">${e(rG)||'—'}</td>${[qA,qB].map(q=>{const ok=rG&&q.goleador&&rG.trim().toLowerCase()===q.goleador.trim().toLowerCase();return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${e(q.goleador)||'—'}${ok?' ✅':''}${ok?pBadge(10):''}</td>`;}).join('')}</tr>
   <tr class="cmp-grp"><td colspan="${nc}">TERCEROS CLASIFICADOS</td></tr>
   ${Object.keys(GS).map(g=>{const isR=real.thirds&&real.thirds.includes(g);const rn=real.groups&&real.groups[g]&&real.groups[g][2];const rt=rn?GS[g].teams.find(x=>x.n===rn)||{f:'🏳'}:{f:''};
-  return`<tr><td style="padding-left:10px">3°Grp.${g}</td><td style="background:${isR?'#f0fff4':'#fff'};font-weight:${isR?700:400}">${isR?`<span class="chip chip-g">${rt.f}✓</span>`:''}</td>${[qA,qB].map(q=>{const sel=q.thirds&&q.thirds.includes(g);const name=q.groups&&q.groups[g]?q.groups[g][2]:'?';const t=GS[g].teams.find(x=>x.n===name)||{f:'🏳'};const ok=isR&&sel;return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${sel?`<span class="chip chip-3">${t.f}✓</span>${ok?' ✅':''}`:''}</td>`;}).join('')}</tr>`;}).join('')}
+  return`<tr><td style="padding-left:10px">3°Grp.${g}</td><td style="background:${isR?'#f0fff4':'#fff'};font-weight:${isR?700:400}">${isR?`<span class="chip chip-g">${rt.f}✓</span>`:''}</td>${[qA,qB].map(q=>{const sel=q.thirds&&q.thirds.includes(g);const name=q.groups&&q.groups[g]?q.groups[g][2]:'?';const t=GS[g].teams.find(x=>x.n===name)||{f:'🏳'};const ok=isR&&sel;return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${sel?`<span class="chip chip-3">${t.f}✓</span>${ok?' ✅':''}${ok?pBadge(4):''}`:''}</td>`;}).join('')}</tr>`;}).join('')}
   ${Object.keys(GS).map(g=>`<tr class="cmp-grp"><td colspan="${nc}">GRUPO ${g}</td></tr>
   ${[0,1,2].map(p=>{const rn=real.groups&&real.groups[g]&&real.groups[g][p];const rt=rn?GS[g].teams.find(x=>x.n===rn)||{f:'🏳',n:rn}:{f:'',n:''};
   return`<tr><td style="padding-left:10px">${['🥇','🥈','🥉'][p]} ${p+1}°</td><td style="background:${rn?'#f0fff4':'#fff'};font-weight:700">${rn?rt.f+' '+e(rn):'—'}</td>
   ${[qA,qB].map(q=>{const n=q.groups&&q.groups[g]?q.groups[g][p]:'?';const t=GS[g].teams.find(x=>x.n===n)||{f:'🏳'};const ok=rn&&rn===n;
-  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${t.f} ${e(n)}${ok?' ✅':''}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
-  ${[{l:'16AVOS DE FINAL',defs:R16},{l:'8AVOS DE FINAL',defs:QF},{l:'4TOS DE FINAL',defs:CF},{l:'SEMIFINAL',defs:SF},{l:'3° Y 4° LUGAR',defs:[TP]},{l:'GRAN FINAL',defs:[FN]}].map(({l,defs})=>`
-  <tr class="cmp-grp"><td colspan="${nc}">${l}</td></tr>
+  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${t.f} ${e(n)}${ok?' ✅':''}${grpPts(q,g,p)}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
+  ${[{lbl:'16AVOS DE FINAL',defs:R16,mpts:2},{lbl:'8AVOS DE FINAL',defs:QF,mpts:2},{lbl:'4TOS DE FINAL',defs:CF,mpts:4},{lbl:'SEMIFINAL',defs:SF,mpts:5},{lbl:'3° Y 4° LUGAR',defs:[TP],mpts:6},{lbl:'GRAN FINAL',defs:[FN],mpts:10}].map(({lbl,defs,mpts})=>`
+  <tr class="cmp-grp"><td colspan="${nc}">${lbl}</td></tr>
   ${defs.map(m=>{const rw=real.picks&&real.picks[m.id];const rt=rw?{f:rw.f,n:rw.n}:null;const rl=getLoser(m,real);
   return`<tr><td style="padding-left:10px;font-size:.72rem">${m.num}</td><td style="background:${rt?'#f0fff4':'#fff'};font-weight:700">${fmtML(rt,rl)}</td>
-  ${[qA,qB].map(q=>{const w=q.picks&&q.picks[m.id];const ok=rw&&w&&rw.n===w.n;const l=getLoser(m,q);
-  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${fmtML(w,l)}${ok?' ✅':''}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
+  ${[qA,qB].map(q=>{const w=q.picks&&q.picks[m.id];const ok=rw&&w&&rw.n===w.n;const ql=getLoser(m,q);const loserOk=rl&&ql&&rl.n===ql.n;
+  const pts=ok&&loserOk&&m.id==='p104'?pBadge(`${mpts}+15`):ok?pBadge(mpts):loserOk&&m.id==='p104'?pBadge(15):'';
+  return`<td style="${ok?'background:#f0fff4;font-weight:700':''}">${fmtML(w,ql)}${ok?' ✅':''}${pts}</td>`;}).join('')}</tr>`;}).join('')}`).join('')}
   </tbody></table></div>`;
   document.getElementById('main').innerHTML=h;
 }

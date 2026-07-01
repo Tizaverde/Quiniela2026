@@ -276,12 +276,13 @@ function load(){
 
 // ── SCORING ──
 function mRes(id,pts,R,q){
-  const rw=(R.picks||{})[id],qw=(q.picks||{})[id];
-  if(!rw||!qw||rw.n!==qw.n)return 0;
   const m=ALL_MATCHES.find(x=>x.id===id);
-  if(!m)return pts;
-  const rl=getLoser(m,R),ql=getLoser(m,q);
-  return(rl&&ql&&rl.n===ql.n)?pts:0;
+  if(!m)return 0;
+  const rh=resolveTeam(m.hs,R),ra=resolveTeam(m.as,R);
+  if(!rh||!ra)return 0;
+  const qh=resolveTeam(m.hs,q),qa=resolveTeam(m.as,q);
+  if(!qh||!qa)return 0;
+  return(rh.n===qh.n&&ra.n===qa.n)?pts:0;
 }
 function scoreQ(q){
   const R=real||{groups:{},thirds:[],picks:{},goleador:''};

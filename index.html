@@ -512,6 +512,7 @@ function pick(id,side){
   const m=all.find(x=>x.id===id);if(!m)return;
   const src=side==='h'?m.hs:m.as;
   const t=gT(src);if(!t)return;
+  if(ST.picks[id]&&ST.picks[id].n===t.n)return;
   ST.picks[id]={n:t.n,f:t.f};
   const s=STEPS[ST.step];
   if(s==='r16')rMatchRound('16avos de Final',R16);

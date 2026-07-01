@@ -765,6 +765,7 @@ function pickReal(id,side){
   const src=side==='h'?m.hs:m.as;
   const t=getRealTeam(src);if(!t)return;
   if(!real.picks)real.picks={};
+  if(real.picks[id]&&real.picks[id].n===t.n)return;
   real.picks[id]={n:t.n,f:t.f};
   saveReal();
   rResults();

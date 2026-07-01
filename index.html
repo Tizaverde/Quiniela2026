@@ -512,9 +512,9 @@ function pick(id,side){
   const m=all.find(x=>x.id===id);if(!m)return;
   const src=side==='h'?m.hs:m.as;
   const t=gT(src);if(!t)return;
-  if(ST.picks[id]&&ST.picks[id].n===t.n)return;
-  ST.picks[id]={n:t.n,f:t.f};
   const s=STEPS[ST.step];
+  if(ST.picks[id]&&ST.picks[id].n===t.n){delete ST.picks[id];if(s==='r16')rMatchRound('16avos de Final',R16);else if(s==='qf')rMatchRound('8avos de Final',QF);else if(s==='cf')rMatchRound('4tos de Final',CF);else if(s==='sf')rSF();else if(s==='final')rFinal();return;}
+  ST.picks[id]={n:t.n,f:t.f};
   if(s==='r16')rMatchRound('16avos de Final',R16);
   else if(s==='qf')rMatchRound('8avos de Final',QF);
   else if(s==='cf')rMatchRound('4tos de Final',CF);

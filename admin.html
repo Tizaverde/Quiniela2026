@@ -765,7 +765,7 @@ function pickReal(id,side){
   const src=side==='h'?m.hs:m.as;
   const t=getRealTeam(src);if(!t)return;
   if(!real.picks)real.picks={};
-  if(real.picks[id]&&real.picks[id].n===t.n)return;
+  if(real.picks[id]&&real.picks[id].n===t.n){delete real.picks[id];saveReal();rResults();return;}
   real.picks[id]={n:t.n,f:t.f};
   saveReal();
   rResults();
@@ -824,7 +824,8 @@ function rCompare(){
   ${[{lbl:'16AVOS DE FINAL',defs:R16,mpts:2,nxt:'→ 8avos',eli:'Eliminado'},{lbl:'8AVOS DE FINAL',defs:QF,mpts:2,nxt:'→ 4tos',eli:'Eliminado'},{lbl:'4TOS DE FINAL',defs:CF,mpts:4,nxt:'→ Semis',eli:'Eliminado'},{lbl:'SEMIFINAL',defs:SF,mpts:5,nxt:'→ Final',eli:'→ 3°/4°'},{lbl:'3° Y 4° LUGAR',defs:[TP],mpts:6,nxt:'🥉 3er Lugar',eli:'4° Lugar'},{lbl:'GRAN FINAL',defs:[FN],mpts:10,nxt:'🏆 Campeón',eli:'🥈 Subcampeón'}].map(({lbl,defs,mpts,nxt,eli})=>`
   <tr class="cmp-grp"><td colspan="${nc}">${lbl}</td></tr>
   ${defs.map(m=>{const rw=real.picks&&real.picks[m.id];const rt=rw?{f:rw.f,n:rw.n}:null;const rl=getLoser(m,real);
-  const realCell=rt?`<span style="font-weight:700">${rt.f} ${e(rt.n)}</span> <span class="adv-chip">${nxt}</span>`+(rl?`<br><span class="adv-elim">${rl.f} ${e(rl.n)} <span class="adv-chip-out">${eli}</span></span>`:''): '—';
+  const ht=getRealTeam(m.hs),at=getRealTeam(m.as);const slotLbl=s=>s.t==='g'?`${s.p+1}°${s.g}`:s.t==='3rd'?'3°cl.':s.t==='w'?`G.${s.m}`:s.t==='l'?`L.${s.m}`:'?';
+  const realCell=rt?`<span style="font-weight:700">${rt.f} ${e(rt.n)}</span> <span class="adv-chip">${nxt}</span>`+(rl?`<br><span class="adv-elim">${rl.f} ${e(rl.n)} <span class="adv-chip-out">${eli}</span></span>`:''):`<span style="color:#4a5568;font-size:.75rem">${ht?ht.f+' '+e(ht.n):slotLbl(m.hs)} vs ${at?at.f+' '+e(at.n):slotLbl(m.as)}</span>`;
   return`<tr><td style="padding-left:10px;font-size:.72rem">${m.num}</td><td style="background:${rt?'#f0fff4':'#fff'};font-weight:700">${realCell}</td>
   ${[qA,qB].map(q=>{const w=q.picks&&q.picks[m.id];const ok=rw&&w&&rw.n===w.n;const ql=getLoser(m,q);const loserOk=rl&&ql&&rl.n===ql.n;
   const pts=ok&&loserOk&&m.id==='p104'?pBadge(`${mpts}+15`):ok?pBadge(mpts):loserOk&&m.id==='p104'?pBadge(15):'';
